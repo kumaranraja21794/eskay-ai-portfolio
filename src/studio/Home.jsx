@@ -135,7 +135,7 @@ const About = () => (
           </div>
         </div>
         <Tilt className="portrait-card" max={6}>
-          <img src="/developer_portrait.png" alt="Sakthi Kumaran — EsKay" loading="lazy" />
+          <img src="/hero-bg-v13.png" alt="Sakthi Kumaran — EsKay" loading="lazy" />
           <div className="portrait-label">
             <div>
               <div>SAKTHI KUMARAN</div>
