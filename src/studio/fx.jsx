@@ -72,17 +72,21 @@ export const Scramble = ({ text, as: Tag = 'span', speed = 28, delay = 0, classN
 };
 
 /* ---- Word-by-word rise reveal ---- */
+/* NOTE: the moving span is fully clipped by its overflow-hidden wrapper,
+   so we observe the (unclipped) wrapper — observing the clipped child
+   never intersects and the animation deadlocks. */
 export const Rise = ({ children, delay = 0, y = '110%', as: Tag = 'span' }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-5% 0px' });
   const words = String(children).split(' ');
   return (
-    <Tag>
+    <Tag ref={ref}>
       {words.map((w, i) => (
         <span className="word" key={i}>
           <motion.span
             style={{ display: 'inline-block' }}
             initial={{ y }}
-            whileInView={{ y: 0 }}
-            viewport={{ once: true, margin: '-10% 0px' }}
+            animate={inView ? { y: 0 } : { y }}
             transition={{ duration: 0.9, delay: delay + i * 0.045, ease: [0.16, 1, 0.3, 1] }}
           >
             {w}
