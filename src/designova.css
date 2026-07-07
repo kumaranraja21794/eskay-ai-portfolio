@@ -1,0 +1,299 @@
+/* Designova Theme Styles */
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=Great+Vibes&display=swap');
+
+:root {
+  --color-orange: #FF6B4A;
+  --color-dark: #0F0F0F;
+  --color-glass: rgba(255, 255, 255, 0.08);
+  --color-glass-border: rgba(255, 255, 255, 0.15);
+  --font-inter: 'Urbanist', sans-serif;
+}
+
+/* Ensure the body remains dark if this is loaded */
+body {
+  background-color: var(--color-dark);
+  color: #FFFFFF;
+}
+
+/* Header Styles */
+.craftfolio-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.5rem 3rem;
+  z-index: 1000;
+  background: transparent !important; 
+  border: none !important;
+  backdrop-filter: none !important;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.logo-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-inter);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.btn-icon-outline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.btn-icon-outline:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-hire-me {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 1.5rem;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  font-family: var(--font-inter);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.btn-hire-me:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Hero Styles */
+.designova-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 5vw;
+  overflow: hidden;
+}
+
+.hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.hero-background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+}
+
+.hero-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(15,15,15,1) 0%, rgba(15,15,15,0.7) 50%, rgba(15,15,15,0) 100%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding-top: 5rem;
+}
+
+.hero-text-content {
+  max-width: 650px;
+}
+
+.eyebrow {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--color-glass-border);
+  border-radius: 100px;
+  background: var(--color-glass);
+  backdrop-filter: blur(10px);
+  font-size: 0.85rem;
+  color: #A0A0A0;
+  margin-bottom: 2rem;
+}
+
+.hero-text-content h1 {
+  font-family: var(--font-inter);
+  font-size: clamp(3.5rem, 6vw, 5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #FFFFFF;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.hero-text-content p {
+  font-size: 1.1rem;
+  color: #A0A0A0;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.btn-primary-orange {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-orange);
+  color: #FFFFFF;
+  text-decoration: none;
+  padding: 0.9rem 2rem;
+  border-radius: 100px;
+  font-weight: 500;
+  transition: transform 0.3s ease;
+}
+
+.btn-primary-orange:hover {
+  transform: translateY(-2px);
+}
+
+.btn-secondary-outline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(10px);
+  color: #FFFFFF;
+  text-decoration: none;
+  padding: 0.9rem 2rem;
+  border-radius: 100px;
+  font-weight: 500;
+  transition: background 0.3s ease;
+}
+
+.btn-secondary-outline:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.hero-bottom-bar {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 1200px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 2.5rem;
+  z-index: 2;
+  gap: 2rem;
+}
+
+.bottom-bar-item {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.bracket-top-left {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  border-left: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.bottom-bar-item h3 {
+  font-family: var(--font-inter);
+  font-size: 1.5rem;
+  color: #FFFFFF;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.bottom-bar-item p {
+  font-size: 0.9rem;
+  color: #A0A0A0;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .hero-bottom-bar {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2rem;
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    width: 100%;
+    margin-top: 4rem;
+  }
+  
+  .designova-hero {
+    padding-bottom: 4rem;
+  }
+}
+
+.neon-cursive-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-family: 'Great Vibes', cursive;
+  font-size: clamp(8rem, 18vw, 22rem);
+  color: var(--color-orange);
+  white-space: nowrap;
+  z-index: 1;
+  text-shadow: 
+    0 0 10px var(--color-orange),
+    0 0 30px rgba(255, 107, 74, 0.8),
+    0 0 60px rgba(255, 107, 74, 0.5),
+    0 0 100px rgba(255, 107, 74, 0.3);
+  opacity: 0.9;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+

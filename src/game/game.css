@@ -1,0 +1,202 @@
+/* ===========================================================================
+   EsKay Portfolio — Gamification layer styles
+   =========================================================================== */
+
+/* ---- Party mode (Konami) ---- */
+.party-mode {
+  animation: party-hue 2.5s linear infinite;
+}
+@keyframes party-hue {
+  0%   { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.konami-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ---- Achievement toasts ---- */
+.ach-toast-stack {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  z-index: 9500;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.ach-toast {
+  pointer-events: auto;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(20, 20, 24, 0.92);
+  border: 1px solid rgba(255, 107, 74, 0.35);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 107, 74, 0.15);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+.ach-toast-icon { font-size: 1.7rem; line-height: 1; }
+
+.ach-toast-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ach-toast-label {
+  font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: #FF6B4A; font-weight: 700;
+}
+.ach-toast-title { font-size: 0.95rem; font-weight: 700; color: #fff; }
+.ach-toast-desc { font-size: 0.75rem; color: rgba(255,255,255,0.55); }
+
+.ach-toast-xp {
+  font-size: 0.75rem; font-weight: 800; color: #10B981;
+  background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
+  padding: 4px 8px; border-radius: 100px; white-space: nowrap;
+}
+
+.ach-toast-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, #FF6B4A, #8B5CF6);
+  transform-origin: left;
+}
+
+/* ---- HUD ---- */
+.hud-fab {
+  position: fixed;
+  bottom: 22px;
+  left: 22px;
+  z-index: 9400;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(18, 18, 22, 0.85);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+}
+.hud-ring { position: absolute; inset: 5px; width: 42px; height: 42px; }
+.hud-level {
+  position: relative;
+  font-size: 0.72rem; font-weight: 800; color: #fff;
+  font-family: var(--font-heading, sans-serif);
+}
+
+.hud-panel {
+  position: fixed;
+  bottom: 86px;
+  left: 22px;
+  z-index: 9400;
+  width: 320px;
+  max-width: calc(100vw - 44px);
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  border-radius: 20px;
+  padding: 18px;
+  background: rgba(16, 16, 20, 0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  backdrop-filter: blur(18px);
+}
+
+.hud-panel-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.hud-panel-title {
+  font-size: 0.95rem; font-weight: 800; color: #fff;
+  font-family: var(--font-heading, sans-serif);
+}
+.hud-panel-xp { font-size: 0.72rem; color: #FF6B4A; font-weight: 700; }
+.hud-panel-hint { font-size: 0.74rem; color: rgba(255,255,255,0.45); margin: 0 0 14px; line-height: 1.5; }
+
+.hud-ach-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.hud-ach {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  opacity: 0.55;
+  transition: opacity 0.3s ease;
+}
+.hud-ach.got {
+  opacity: 1;
+  border-color: rgba(255,107,74,0.3);
+  background: rgba(255,107,74,0.06);
+}
+.hud-ach-icon { font-size: 1.15rem; width: 26px; text-align: center; }
+.hud-ach-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.hud-ach-text b { font-size: 0.8rem; color: #fff; font-weight: 700; }
+.hud-ach-text i { font-size: 0.68rem; color: rgba(255,255,255,0.45); font-style: normal; }
+.hud-ach-xp { font-size: 0.68rem; font-weight: 800; color: rgba(255,255,255,0.5); }
+
+/* ---- Command palette ---- */
+.cmdk-overlay {
+  position: fixed; inset: 0; z-index: 9600;
+  background: rgba(8, 8, 10, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 14vh 20px 20px;
+}
+
+.cmdk-panel {
+  width: 560px; max-width: 100%;
+  border-radius: 18px;
+  background: rgba(20, 20, 24, 0.97);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.65);
+  overflow: hidden;
+}
+
+.cmdk-input {
+  width: 100%; box-sizing: border-box;
+  padding: 18px 20px;
+  background: transparent; border: none; outline: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: #fff; font-size: 1rem;
+  font-family: var(--font-body, sans-serif);
+}
+.cmdk-input::placeholder { color: rgba(255,255,255,0.35); }
+
+.cmdk-list { list-style: none; margin: 0; padding: 8px; max-height: 320px; overflow-y: auto; }
+.cmdk-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-radius: 10px; cursor: pointer;
+  color: rgba(255,255,255,0.85); font-size: 0.92rem;
+}
+.cmdk-item em { font-style: normal; font-size: 0.7rem; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; }
+.cmdk-item.active { background: rgba(255,107,74,0.14); color: #fff; }
+.cmdk-item.active em { color: #FF6B4A; }
+.cmdk-empty { padding: 20px; text-align: center; color: rgba(255,255,255,0.4); font-size: 0.9rem; }
+
+.cmdk-foot {
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.68rem; color: rgba(255,255,255,0.35);
+  letter-spacing: 0.05em;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .ach-toast-stack { top: 76px; right: 12px; left: 12px; align-items: flex-end; }
+  .ach-toast { width: 100%; }
+  .hud-fab { bottom: 16px; left: 16px; width: 46px; height: 46px; }
+  .hud-ring { inset: 4px; width: 38px; height: 38px; }
+  .hud-panel { bottom: 72px; left: 16px; right: 16px; width: auto; }
+  .cmdk-overlay { padding-top: 10vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .party-mode { animation: none; }
+}
