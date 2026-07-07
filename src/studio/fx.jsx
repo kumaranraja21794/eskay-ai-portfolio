@@ -288,6 +288,149 @@ export const DotGrid = () => {
   return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
 };
 
+/* ---- Murmuration: boids flock (emergent AI) in brand palette ----
+   Simple rules → complex intelligence. Cursor acts as a falcon: the
+   flock swirls away from it, exactly like starlings dodging a predator. */
+export const Murmuration = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, dpr, boids = [], raf, t = 0;
+    const mouse = { x: -9999, y: -9999 };
+
+    const PERCEPTION = 52;   // neighbour radius
+    const SEP_DIST = 20;     // personal space
+    const MAX_SPEED = 2.6;
+    const MAX_FORCE = 0.055;
+    const FEAR_R = 130;      // falcon (cursor) radius
+
+    const init = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      W = canvas.offsetWidth; H = canvas.offsetHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.min(240, Math.max(90, Math.floor((W * H) / 5200)));
+      boids = Array.from({ length: n }, () => {
+        const a = Math.random() * Math.PI * 2;
+        return {
+          x: Math.random() * W, y: Math.random() * H,
+          vx: Math.cos(a) * MAX_SPEED * 0.6, vy: Math.sin(a) * MAX_SPEED * 0.6,
+          sig: Math.random() < 0.12, // signal-orange birds
+        };
+      });
+      ctx.fillStyle = '#f0efe9';
+      ctx.fillRect(0, 0, W, H);
+    };
+
+    const limit = (vx, vy, max) => {
+      const m = Math.hypot(vx, vy);
+      return m > max ? [vx / m * max, vy / m * max] : [vx, vy];
+    };
+
+    const tick = () => {
+      t += 0.004;
+      // translucent bone wash → fading trails
+      ctx.fillStyle = 'rgba(240, 239, 233, 0.28)';
+      ctx.fillRect(0, 0, W, H);
+
+      // drifting invisible attractor keeps the flock wandering as one cloud
+      const ax = W * (0.5 + 0.32 * Math.sin(t * 1.3) * Math.cos(t * 0.7));
+      const ay = H * (0.45 + 0.28 * Math.sin(t * 0.9 + 2));
+
+      for (const b of boids) {
+        let cx = 0, cy = 0, alx = 0, aly = 0, sx = 0, sy = 0, n = 0;
+        for (const o of boids) {
+          if (o === b) continue;
+          const dx = o.x - b.x, dy = o.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < PERCEPTION * PERCEPTION) {
+            cx += o.x; cy += o.y;
+            alx += o.vx; aly += o.vy;
+            n++;
+            if (d2 < SEP_DIST * SEP_DIST && d2 > 0.01) {
+              const d = Math.sqrt(d2);
+              sx -= dx / d / d * 14; sy -= dy / d / d * 14;
+            }
+          }
+        }
+        let fx = 0, fy = 0;
+        if (n > 0) {
+          // cohesion
+          let [ix, iy] = limit(cx / n - b.x, cy / n - b.y, MAX_FORCE * 0.9);
+          fx += ix; fy += iy;
+          // alignment
+          [ix, iy] = limit(alx / n - b.vx, aly / n - b.vy, MAX_FORCE * 1.15);
+          fx += ix; fy += iy;
+          // separation
+          [ix, iy] = limit(sx, sy, MAX_FORCE * 1.6);
+          fx += ix; fy += iy;
+        }
+        // wander toward drifting attractor (very gentle)
+        let [wx, wy] = limit(ax - b.x, ay - b.y, MAX_FORCE * 0.35);
+        fx += wx; fy += wy;
+        // falcon: flee the cursor
+        const mdx = b.x - mouse.x, mdy = b.y - mouse.y;
+        const md2 = mdx * mdx + mdy * mdy;
+        if (md2 < FEAR_R * FEAR_R && md2 > 0.01) {
+          const md = Math.sqrt(md2);
+          const [px, py] = limit(mdx / md, mdy / md, MAX_FORCE * 6 * (1 - md / FEAR_R));
+          fx += px; fy += py;
+        }
+
+        b.vx += fx; b.vy += fy;
+        [b.vx, b.vy] = limit(b.vx, b.vy, MAX_SPEED);
+        b.x += b.vx; b.y += b.vy;
+        // soft wrap
+        if (b.x < -12) b.x = W + 12; if (b.x > W + 12) b.x = -12;
+        if (b.y < -12) b.y = H + 12; if (b.y > H + 12) b.y = -12;
+      }
+
+      // draw: elongated dots along velocity → bird-like streaks
+      for (const b of boids) {
+        const m = Math.hypot(b.vx, b.vy) || 1;
+        ctx.strokeStyle = b.sig ? 'rgba(255, 92, 0, 0.9)' : 'rgba(19, 19, 17, 0.68)';
+        ctx.lineWidth = b.sig ? 2.2 : 1.7;
+        ctx.beginPath();
+        ctx.moveTo(b.x - b.vx / m * 3.2, b.y - b.vy / m * 3.2);
+        ctx.lineTo(b.x + b.vx / m * 3.2, b.y + b.vy / m * 3.2);
+        ctx.stroke();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onMouse = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    init();
+    if (!reduced) {
+      raf = requestAnimationFrame(tick);
+    } else {
+      // static scatter for reduced motion
+      for (const b of boids) {
+        ctx.fillStyle = b.sig ? 'rgba(255,92,0,0.8)' : 'rgba(19,19,17,0.5)';
+        ctx.beginPath(); ctx.arc(b.x, b.y, 1.6, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    window.addEventListener('resize', init);
+    window.addEventListener('mousemove', onMouse, { passive: true });
+    window.addEventListener('mouseout', onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', init);
+      window.removeEventListener('mousemove', onMouse);
+      window.removeEventListener('mouseout', onLeave);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
+};
+
 /* ---- Rotating word ---- */
 export const Rotator = ({ words, interval = 2200 }) => {
   const [idx, setIdx] = useState(0);
