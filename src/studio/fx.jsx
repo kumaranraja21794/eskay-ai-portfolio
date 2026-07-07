@@ -220,6 +220,74 @@ export const NeuralCanvas = () => {
   return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
 };
 
+/* ---- Dot-matrix grid canvas: dots wake up + turn signal-orange near cursor ---- */
+export const DotGrid = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, dpr, dots = [], raf;
+    const mouse = { x: -9999, y: -9999 };
+    const GAP = 26;
+
+    const init = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+      W = canvas.offsetWidth; H = canvas.offsetHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      dots = [];
+      for (let x = GAP / 2; x < W; x += GAP) {
+        for (let y = GAP / 2; y < H; y += GAP) {
+          dots.push({ x, y, e: 0 }); // e = excitement 0..1
+        }
+      }
+    };
+
+    const tick = () => {
+      ctx.clearRect(0, 0, W, H);
+      const R = 150;
+      for (const d of dots) {
+        const dist = Math.hypot(d.x - mouse.x, d.y - mouse.y);
+        const target = dist < R ? 1 - dist / R : 0;
+        d.e += (target - d.e) * 0.12;
+        const r = 1 + d.e * 2.6;
+        if (d.e > 0.08) {
+          ctx.fillStyle = `rgba(255, 92, 0, ${0.25 + d.e * 0.75})`;
+        } else {
+          ctx.fillStyle = 'rgba(19, 19, 17, 0.16)';
+        }
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onMouse = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    init();
+    if (!reduced) raf = requestAnimationFrame(tick);
+    else tick() || cancelAnimationFrame(raf);
+    window.addEventListener('resize', init);
+    window.addEventListener('mousemove', onMouse, { passive: true });
+    window.addEventListener('mouseout', onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', init);
+      window.removeEventListener('mousemove', onMouse);
+      window.removeEventListener('mouseout', onLeave);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
+};
+
 /* ---- Rotating word ---- */
 export const Rotator = ({ words, interval = 2200 }) => {
   const [idx, setIdx] = useState(0);
