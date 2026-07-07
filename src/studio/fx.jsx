@@ -1,0 +1,264 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { motion, useMotionValue, useSpring, useInView } from 'framer-motion';
+
+/* =========================================================
+   ESKAY STUDIO — interaction primitives
+   ========================================================= */
+
+/* ---- Custom cursor: dot + trailing ring, difference blend ---- */
+export const Cursor = () => {
+  const dotX = useMotionValue(-100); const dotY = useMotionValue(-100);
+  const ringX = useSpring(dotX, { stiffness: 400, damping: 35 });
+  const ringY = useSpring(dotY, { stiffness: 400, damping: 35 });
+  const [hover, setHover] = useState(false);
+
+  useEffect(() => {
+    const move = (e) => { dotX.set(e.clientX - 4); dotY.set(e.clientY - 4); };
+    const over = (e) => {
+      setHover(!!e.target.closest('a, button, [data-hover]'));
+    };
+    window.addEventListener('mousemove', move, { passive: true });
+    window.addEventListener('mouseover', over, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseover', over);
+    };
+  }, [dotX, dotY]);
+
+  return (
+    <>
+      <motion.div className="cursor-dot" style={{ x: dotX, y: dotY }} />
+      <motion.div
+        className={hover ? 'cursor-ring is-hover' : 'cursor-ring'}
+        style={{ x: ringX, y: ringY, translateX: -14, translateY: -14 }}
+      />
+    </>
+  );
+};
+
+/* ---- Scramble/decode text: glyphs resolve into words on view ---- */
+const GLYPHS = '!<>-_\\/[]{}—=+*^?#$%&@01';
+export const Scramble = ({ text, as: Tag = 'span', speed = 28, delay = 0, className = '' }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-8% 0px' });
+  const [out, setOut] = useState(text.replace(/\S/g, ' '));
+
+  useEffect(() => {
+    if (!inView) return;
+    let frame = 0;
+    let raf;
+    const total = text.length * 2.2;
+    const t = setTimeout(() => {
+      const tick = () => {
+        frame += 1;
+        const progress = frame / total;
+        const resolved = Math.floor(progress * text.length);
+        let s = '';
+        for (let i = 0; i < text.length; i++) {
+          if (text[i] === ' ') { s += ' '; continue; }
+          if (i < resolved) s += text[i];
+          else s += GLYPHS[(Math.random() * GLYPHS.length) | 0];
+        }
+        setOut(s);
+        if (resolved < text.length) raf = requestAnimationFrame(() => setTimeout(tick, 1000 / speed));
+        else setOut(text);
+      };
+      tick();
+    }, delay);
+    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
+  }, [inView, text, speed, delay]);
+
+  return <Tag ref={ref} className={className} aria-label={text}>{out}</Tag>;
+};
+
+/* ---- Word-by-word rise reveal ---- */
+export const Rise = ({ children, delay = 0, y = '110%', as: Tag = 'span' }) => {
+  const words = String(children).split(' ');
+  return (
+    <Tag>
+      {words.map((w, i) => (
+        <span className="word" key={i}>
+          <motion.span
+            style={{ display: 'inline-block' }}
+            initial={{ y }}
+            whileInView={{ y: 0 }}
+            viewport={{ once: true, margin: '-10% 0px' }}
+            transition={{ duration: 0.9, delay: delay + i * 0.045, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {w}
+          </motion.span>
+          {i < words.length - 1 ? ' ' : ''}
+        </span>
+      ))}
+    </Tag>
+  );
+};
+
+/* ---- Magnetic wrapper: element leans toward cursor ---- */
+export const Magnet = ({ children, strength = 0.35 }) => {
+  const ref = useRef(null);
+  const x = useMotionValue(0); const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 180, damping: 14 });
+  const sy = useSpring(y, { stiffness: 180, damping: 14 });
+
+  const onMove = useCallback((e) => {
+    const r = ref.current.getBoundingClientRect();
+    x.set((e.clientX - r.left - r.width / 2) * strength);
+    y.set((e.clientY - r.top - r.height / 2) * strength);
+  }, [x, y, strength]);
+  const onLeave = useCallback(() => { x.set(0); y.set(0); }, [x, y]);
+
+  return (
+    <motion.div ref={ref} style={{ x: sx, y: sy, display: 'inline-block' }}
+      onMouseMove={onMove} onMouseLeave={onLeave}>
+      {children}
+    </motion.div>
+  );
+};
+
+/* ---- Count-up stat ---- */
+export const CountUp = ({ end, suffix = '', duration = 1.6 }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    let start;
+    let raf;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / (duration * 1000), 1);
+      setVal(Math.round((1 - Math.pow(1 - p, 3)) * end));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, end, duration]);
+  return <b ref={ref}>{val}<i>{suffix}</i></b>;
+};
+
+/* ---- Neural network canvas: drifting nodes + proximity edges + mouse repulsion ---- */
+export const NeuralCanvas = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, dpr, nodes = [], raf;
+    const mouse = { x: -9999, y: -9999 };
+
+    const init = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+      W = canvas.offsetWidth; H = canvas.offsetHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.min(90, Math.floor((W * H) / 16000));
+      nodes = Array.from({ length: count }, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35,
+        r: 1 + Math.random() * 1.6,
+        hue: Math.random() < 0.18,
+      }));
+    };
+
+    const tick = () => {
+      ctx.clearRect(0, 0, W, H);
+      const LINK = 120;
+      for (const n of nodes) {
+        n.x += n.vx; n.y += n.vy;
+        if (n.x < 0 || n.x > W) n.vx *= -1;
+        if (n.y < 0 || n.y > H) n.vy *= -1;
+        const dx = n.x - mouse.x, dy = n.y - mouse.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < 22000) { n.x += dx * 0.012; n.y += dy * 0.012; }
+      }
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const d = Math.hypot(dx, dy);
+          if (d < LINK) {
+            const o = (1 - d / LINK) * 0.35;
+            ctx.strokeStyle = `rgba(139, 92, 246, ${o})`;
+            ctx.lineWidth = 0.7;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+          }
+        }
+      }
+      for (const n of nodes) {
+        ctx.fillStyle = n.hue ? 'rgba(200, 245, 66, 0.9)' : 'rgba(34, 211, 238, 0.75)';
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill();
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onMouse = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    init();
+    if (!reduced) raf = requestAnimationFrame(tick);
+    else { /* static frame */ tick(); cancelAnimationFrame(raf); }
+    window.addEventListener('resize', init);
+    window.addEventListener('mousemove', onMouse, { passive: true });
+    window.addEventListener('mouseout', onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', init);
+      window.removeEventListener('mousemove', onMouse);
+      window.removeEventListener('mouseout', onLeave);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
+};
+
+/* ---- Rotating word ---- */
+export const Rotator = ({ words, interval = 2200 }) => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % words.length), interval);
+    return () => clearInterval(t);
+  }, [words.length, interval]);
+  return (
+    <span className="hero-rotator" style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom' }}>
+      <motion.span
+        key={idx}
+        style={{ display: 'inline-block' }}
+        initial={{ y: '100%', opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {words[idx]}
+      </motion.span>
+    </span>
+  );
+};
+
+/* ---- Tilt card (3D perspective follow) ---- */
+export const Tilt = ({ children, max = 8, className = '' }) => {
+  const ref = useRef(null);
+  const rx = useMotionValue(0); const ry = useMotionValue(0);
+  const srx = useSpring(rx, { stiffness: 160, damping: 18 });
+  const sry = useSpring(ry, { stiffness: 160, damping: 18 });
+
+  const onMove = (e) => {
+    const r = ref.current.getBoundingClientRect();
+    ry.set(((e.clientX - r.left) / r.width - 0.5) * max * 2);
+    rx.set(-((e.clientY - r.top) / r.height - 0.5) * max * 2);
+  };
+  const onLeave = () => { rx.set(0); ry.set(0); };
+
+  return (
+    <motion.div
+      ref={ref} className={className}
+      style={{ rotateX: srx, rotateY: sry, transformPerspective: 900 }}
+      onMouseMove={onMove} onMouseLeave={onLeave}
+    >
+      {children}
+    </motion.div>
+  );
+};
