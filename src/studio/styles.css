@@ -61,24 +61,18 @@
   margin: 0;
 }
 
-/* ---------- custom cursor ---------- */
-.studio .cursor-dot, .studio .cursor-ring {
+/* ---------- Claude-style cursor (orange pointer + sparkle) ---------- */
+.studio, .studio a, .studio button, .studio [data-hover] {
+  cursor: none;
+}
+.studio .claude-cursor {
   position: fixed; top: 0; left: 0; z-index: 3000;
-  pointer-events: none; border-radius: 50%;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(19, 19, 17, 0.25));
 }
-.studio .cursor-dot { width: 8px; height: 8px; background: var(--ink); }
-.studio .cursor-ring {
-  width: 34px; height: 34px; border: 1.5px solid var(--signal);
-  transition: width 0.25s var(--ease-out), height 0.25s var(--ease-out), opacity 0.25s;
-}
-.studio .cursor-ring.is-hover { width: 58px; height: 58px; }
-.studio .cursor-ring::before, .studio .cursor-ring::after {
-  content: ''; position: absolute; background: var(--signal);
-}
-.studio .cursor-ring::before { width: 7px; height: 1px; left: -9px; top: 50%; }
-.studio .cursor-ring::after { width: 1px; height: 7px; top: -9px; left: 50%; }
 @media (hover: none), (pointer: coarse) {
-  .studio .cursor-dot, .studio .cursor-ring { display: none; }
+  .studio .claude-cursor { display: none; }
+  .studio, .studio a, .studio button, .studio [data-hover] { cursor: auto; }
 }
 
 /* ---------- preloader ---------- */

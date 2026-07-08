@@ -5,34 +5,57 @@ import { motion, useMotionValue, useSpring, useInView } from 'framer-motion';
    ESKAY STUDIO — interaction primitives
    ========================================================= */
 
-/* ---- Custom cursor: dot + trailing ring, difference blend ---- */
+/* ---- Claude-style cursor: orange pointer arrow + orbiting sparkle ---- */
 export const Cursor = () => {
-  const dotX = useMotionValue(-100); const dotY = useMotionValue(-100);
-  const ringX = useSpring(dotX, { stiffness: 400, damping: 35 });
-  const ringY = useSpring(dotY, { stiffness: 400, damping: 35 });
+  const x = useMotionValue(-100); const y = useMotionValue(-100);
   const [hover, setHover] = useState(false);
+  const [down, setDown] = useState(false);
 
   useEffect(() => {
-    const move = (e) => { dotX.set(e.clientX - 4); dotY.set(e.clientY - 4); };
-    const over = (e) => {
-      setHover(!!e.target.closest('a, button, [data-hover]'));
-    };
+    const move = (e) => { x.set(e.clientX); y.set(e.clientY); };
+    const over = (e) => setHover(!!e.target.closest('a, button, [data-hover]'));
+    const dn = () => setDown(true);
+    const up = () => setDown(false);
     window.addEventListener('mousemove', move, { passive: true });
     window.addEventListener('mouseover', over, { passive: true });
+    window.addEventListener('mousedown', dn);
+    window.addEventListener('mouseup', up);
     return () => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseover', over);
+      window.removeEventListener('mousedown', dn);
+      window.removeEventListener('mouseup', up);
     };
-  }, [dotX, dotY]);
+  }, [x, y]);
 
   return (
-    <>
-      <motion.div className="cursor-dot" style={{ x: dotX, y: dotY }} />
-      <motion.div
-        className={hover ? 'cursor-ring is-hover' : 'cursor-ring'}
-        style={{ x: ringX, y: ringY, translateX: -14, translateY: -14 }}
-      />
-    </>
+    <motion.div className="claude-cursor" style={{ x, y }}>
+      <motion.svg
+        width="24" height="28" viewBox="0 0 24 28"
+        animate={{ scale: down ? 0.82 : hover ? 1.15 : 1, rotate: hover ? -10 : 0 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+        style={{ transformOrigin: '2px 2px', display: 'block' }}
+      >
+        <path
+          d="M2 1 L2 21.5 L7.6 16.4 L10.9 24.6 L15 22.9 L11.7 14.9 L19 14.2 Z"
+          fill="#ff5c00" stroke="#f0efe9" strokeWidth="1.6" strokeLinejoin="round"
+        />
+      </motion.svg>
+      <motion.svg
+        width="15" height="15" viewBox="-8 -8 16 16"
+        style={{ position: 'absolute', left: 17, top: 16 }}
+        animate={{ rotate: 360, scale: hover ? 1.25 : 0.85 }}
+        transition={{
+          rotate: { duration: 4, repeat: Infinity, ease: 'linear' },
+          scale: { type: 'spring', stiffness: 400, damping: 20 },
+        }}
+      >
+        <path
+          d="M0,-6.5 C1.3,-1.3 1.3,-1.3 6.5,0 C1.3,1.3 1.3,1.3 0,6.5 C-1.3,1.3 -1.3,1.3 -6.5,0 C-1.3,-1.3 -1.3,-1.3 0,-6.5 Z"
+          fill="#ff5c00"
+        />
+      </motion.svg>
+    </motion.div>
   );
 };
 
@@ -417,6 +440,238 @@ export const Murmuration = () => {
         ctx.beginPath(); ctx.arc(b.x, b.y, 1.6, 0, Math.PI * 2); ctx.fill();
       }
     }
+    window.addEventListener('resize', init);
+    window.addEventListener('mousemove', onMouse, { passive: true });
+    window.addEventListener('mouseout', onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', init);
+      window.removeEventListener('mousemove', onMouse);
+      window.removeEventListener('mouseout', onLeave);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
+};
+
+/* ---- NeuralFace: a neural network that assembles into a living AI face ----
+   Cycle: free-floating network → nodes converge into a face → the face
+   breathes, blinks, and its eyes FOLLOW THE VISITOR'S CURSOR → dissolves
+   back into the network. Emergence, embodied. */
+
+const qbez = (p0, p1, p2, n, g) => {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t;
+    pts.push({ u: a * p0[0] + b * p1[0] + c * p2[0], v: a * p0[1] + b * p1[1] + c * p2[1], g });
+  }
+  return pts;
+};
+const ellipsePts = (cx, cy, rx, ry, n, g, a0 = 0, a1 = Math.PI * 2) => {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = a0 + (a1 - a0) * (i / n);
+    pts.push({ u: cx + Math.cos(a) * rx, v: cy + Math.sin(a) * ry, g });
+  }
+  return pts;
+};
+
+const buildFacePoints = () => [
+  // head outline
+  ...ellipsePts(0, 0.02, 0.60, 0.78, 46, 'outline'),
+  // brows
+  ...qbez([-0.40, -0.30], [-0.26, -0.40], [-0.12, -0.32], 8, 'browL'),
+  ...qbez([0.12, -0.32], [0.26, -0.40], [0.40, -0.30], 8, 'browR'),
+  // eyes
+  ...ellipsePts(-0.26, -0.16, 0.125, 0.055, 12, 'eyeL'),
+  ...ellipsePts(0.26, -0.16, 0.125, 0.055, 12, 'eyeR'),
+  // pupils (orange)
+  ...ellipsePts(-0.26, -0.16, 0.028, 0.028, 6, 'pupilL'),
+  ...ellipsePts(0.26, -0.16, 0.028, 0.028, 6, 'pupilR'),
+  // nose bridge + base
+  ...qbez([-0.02, -0.12], [-0.06, 0.04], [-0.09, 0.14], 6, 'nose'),
+  ...qbez([-0.09, 0.14], [0.00, 0.20], [0.08, 0.13], 6, 'nose2'),
+  // lips
+  ...qbez([-0.22, 0.42], [0.00, 0.34], [0.22, 0.42], 12, 'lipT'),
+  ...qbez([-0.22, 0.42], [0.00, 0.52], [0.22, 0.42], 12, 'lipB'),
+];
+
+export const NeuralFace = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, dpr, parts = [], raf, t = 0;
+    const mouse = { x: -9999, y: -9999 };
+    const facePts = buildFacePoints();
+    const HALO_N = 62;
+
+    // phase machine: net → morphIn → face → morphOut → …
+    const PHASES = [['net', 4.0], ['in', 2.2], ['face', 11.0], ['out', 2.2]];
+    let phaseIdx = reduced ? 2 : 0, phaseT = 0, last = 0;
+
+    // life: blinking + eye tracking + smile
+    let nextBlink = 2.5, blinkT = -1;
+    let nextSmile = 6, smileT = -1;
+
+    const init = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+      W = canvas.offsetWidth; H = canvas.offsetHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      parts = [];
+      for (let i = 0; i < facePts.length + HALO_N; i++) {
+        const face = i < facePts.length ? facePts[i] : null;
+        const haloA = Math.random() * Math.PI * 2;
+        parts.push({
+          x: Math.random() * W, y: Math.random() * H,
+          nx: Math.random() * W, ny: Math.random() * H,          // net anchor
+          wa: Math.random() * Math.PI * 2,                        // wander angle
+          face,
+          haloA, haloR: 0.92 + Math.random() * 0.30,              // halo orbit (non-face nodes)
+          stag: Math.random() * 0.35,                             // morph stagger
+          sig: face ? face.g.startsWith('pupil') : Math.random() < 0.12,
+        });
+      }
+    };
+
+    const smooth = (x) => { const c = Math.min(Math.max(x, 0), 1); return c * c * (3 - 2 * c); };
+
+    const tick = (now) => {
+      const dt = Math.min((now - last) / 1000 || 0.016, 0.05);
+      last = now; t += dt;
+      if (!reduced) {
+        phaseT += dt;
+        if (phaseT > PHASES[phaseIdx][1]) { phaseT = 0; phaseIdx = (phaseIdx + 1) % 4; }
+      }
+      const [phase, dur] = PHASES[phaseIdx];
+      const k = phase === 'face' ? 1 : phase === 'net' ? 0
+        : phase === 'in' ? smooth(phaseT / dur) : 1 - smooth(phaseT / dur);
+
+      // face placement
+      const S = Math.min(H * 0.40, W * 0.30);
+      const cx = W > 860 ? W * 0.72 : W * 0.5;
+      const cy = H * 0.46;
+
+      // life timers
+      if (t > nextBlink && blinkT < 0) { blinkT = 0; nextBlink = t + 2.4 + Math.random() * 3.6; }
+      if (blinkT >= 0) { blinkT += dt; if (blinkT > 0.26) blinkT = -1; }
+      const blinkK = blinkT < 0 ? 1 : Math.abs(Math.cos((blinkT / 0.26) * Math.PI)); // 1→0→1
+      if (t > nextSmile && smileT < 0) { smileT = 0; nextSmile = t + 7 + Math.random() * 5; }
+      if (smileT >= 0) { smileT += dt; if (smileT > 1.4) smileT = -1; }
+      const smileK = smileT < 0 ? 0 : Math.sin((smileT / 1.4) * Math.PI);
+
+      // gaze: eyes follow cursor
+      const gdx = mouse.x > -999 ? Math.max(-1, Math.min(1, (mouse.x - cx) / (W * 0.4))) : 0;
+      const gdy = mouse.y > -999 ? Math.max(-1, Math.min(1, (mouse.y - cy) / (H * 0.4))) : 0;
+      const tilt = gdx * 0.05;                                  // head leans toward cursor
+      const breathe = 1 + 0.012 * Math.sin(t * 1.5);
+      const cosT = Math.cos(tilt), sinT = Math.sin(tilt);
+
+      ctx.clearRect(0, 0, W, H);
+
+      // update positions
+      for (const p of parts) {
+        // net anchor wanders
+        p.wa += (Math.random() - 0.5) * 0.3;
+        p.nx += Math.cos(p.wa) * 0.5; p.ny += Math.sin(p.wa) * 0.5;
+        if (p.nx < 0 || p.nx > W) p.wa = Math.PI - p.wa;
+        if (p.ny < 0 || p.ny > H) p.wa = -p.wa;
+        p.nx = Math.max(0, Math.min(W, p.nx)); p.ny = Math.max(0, Math.min(H, p.ny));
+
+        // face target
+        let fu, fv;
+        if (p.face) {
+          fu = p.face.u; fv = p.face.v;
+          const g = p.face.g;
+          if (g === 'eyeL' || g === 'eyeR' || g === 'pupilL' || g === 'pupilR') {
+            fv = -0.16 + (fv + 0.16) * blinkK;                  // blink collapse
+            if (g.startsWith('pupil')) { fu += gdx * 0.045; fv += gdy * 0.03; } // gaze
+          }
+          if ((g === 'lipT' || g === 'lipB') && Math.abs(fu) > 0.13) {
+            fv -= smileK * 0.045;                               // smile corners lift
+          }
+          fv += 0.006 * Math.sin(t * 1.5 + fu * 3);             // micro-life shimmer
+        } else {
+          p.haloA += dt * 0.12;                                  // thoughts orbiting the head
+          fu = Math.cos(p.haloA) * p.haloR * 0.72;
+          fv = 0.02 + Math.sin(p.haloA) * p.haloR * 0.92;
+        }
+        // rotate (tilt), breathe, scale to screen
+        const ru = (fu * cosT - fv * sinT) * breathe;
+        const rv = (fu * sinT + fv * cosT) * breathe;
+        const fx = cx + ru * S + gdx * 10;
+        const fy = cy + rv * S + gdy * 6;
+
+        // stagger the morph per particle
+        const kk = smooth((k - p.stag) / (1 - p.stag));
+        p.x = p.nx + (fx - p.nx) * kk;
+        p.y = p.ny + (fy - p.ny) * kk;
+        p.kk = kk;
+      }
+
+      // edges: proximity network (fades as face forms, stays on halo)
+      const LINK = 92;
+      for (let i = 0; i < parts.length; i++) {
+        const a = parts[i];
+        for (let j = i + 1; j < parts.length; j++) {
+          const b = parts[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < LINK * LINK) {
+            const d = Math.sqrt(d2);
+            const faceMix = (a.kk + b.kk) / 2;
+            const o = (1 - d / LINK) * (0.30 - faceMix * 0.16);
+            if (o > 0.015) {
+              ctx.strokeStyle = `rgba(19, 19, 17, ${o})`;
+              ctx.lineWidth = 0.7;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+        }
+      }
+      // feature strokes: consecutive same-group points → crisp face lines
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < facePts.length - 1; i++) {
+        const a = parts[i], b = parts[i + 1];
+        if (a.face.g !== b.face.g) continue;
+        const o = Math.min(a.kk, b.kk) * 0.62;
+        if (o < 0.02) continue;
+        ctx.strokeStyle = a.face.g.startsWith('pupil')
+          ? `rgba(255, 92, 0, ${o + 0.25})` : `rgba(19, 19, 17, ${o})`;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+
+      // nodes
+      for (const p of parts) {
+        const r = p.sig ? 2.3 : 1.7;
+        ctx.fillStyle = p.sig
+          ? 'rgba(255, 92, 0, 0.95)'
+          : `rgba(19, 19, 17, ${0.45 + p.kk * 0.3})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // heartbeat dot under the face when alive
+      if (k > 0.9) {
+        const pulse = 0.5 + 0.5 * Math.sin(t * 4);
+        ctx.fillStyle = `rgba(255, 92, 0, ${0.35 + pulse * 0.5})`;
+        ctx.beginPath(); ctx.arc(cx, cy + S * 1.05, 3 + pulse * 2, 0, Math.PI * 2); ctx.fill();
+      }
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onMouse = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    init();
+    raf = requestAnimationFrame(tick);
     window.addEventListener('resize', init);
     window.addEventListener('mousemove', onMouse, { passive: true });
     window.addEventListener('mouseout', onLeave);
