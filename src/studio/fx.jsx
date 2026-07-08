@@ -955,6 +955,247 @@ export const NeuralFace3D = () => {
   return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
 };
 
+/* ---- NeuralHead: dense 3D scan-style head (ref: wireframe face scans) ----
+   A sculpted parametric head — ellipsoid skull with gaussian-sculpted
+   nose, eye sockets, brow ridge, lips, cheekbones and chin — sampled as
+   ~1400 points in horizontal scan rings. Assembles from a neural net,
+   turns toward the cursor, breathes, and its orange pupils track you. */
+
+const gauss = (x, c, s) => Math.exp(-((x - c) ** 2) / (2 * s * s));
+
+const buildHead = (mobile) => {
+  const RINGS = mobile ? 30 : 42;
+  const SEGS = mobile ? 26 : 36;
+  const pts = [];
+  for (let ri = 0; ri < RINGS; ri++) {
+    const phi = Math.PI * (0.06 + 0.80 * (ri / (RINGS - 1))); // top → chin
+    for (let si = 0; si < SEGS; si++) {
+      const theta = -Math.PI + (Math.PI * 2 * si) / SEGS;      // 0 = facing viewer
+      // sculpted radius
+      let bump = 0;
+      bump += 0.30 * gauss(theta, 0, 0.13) * gauss(phi, 0.55 * Math.PI, 0.05 * Math.PI);   // nose
+      bump -= 0.10 * (gauss(theta, 0.38, 0.17) + gauss(theta, -0.38, 0.17)) * gauss(phi, 0.45 * Math.PI, 0.05 * Math.PI); // eye sockets
+      bump += 0.06 * gauss(theta, 0, 0.55) * gauss(phi, 0.395 * Math.PI, 0.028 * Math.PI); // brow ridge
+      bump += 0.10 * gauss(theta, 0, 0.20) * gauss(phi, 0.675 * Math.PI, 0.030 * Math.PI); // lips
+      bump -= 0.05 * gauss(theta, 0, 0.22) * gauss(phi, 0.72 * Math.PI, 0.02 * Math.PI);   // under-lip
+      bump += 0.08 * gauss(theta, 0, 0.28) * gauss(phi, 0.82 * Math.PI, 0.05 * Math.PI);   // chin
+      bump += 0.06 * (gauss(theta, 0.8, 0.3) + gauss(theta, -0.8, 0.3)) * gauss(phi, 0.56 * Math.PI, 0.09 * Math.PI); // cheekbones
+      const jaw = 1 - 0.24 * Math.max(0, (phi / Math.PI - 0.58) / 0.34);                    // jaw taper
+      const r = 1 + bump;
+      const sx = 0.74 * jaw, sy = 1.02, sz = 0.82;
+      pts.push({
+        u: sx * r * Math.sin(phi) * Math.sin(theta),
+        v: -sy * r * Math.cos(phi),
+        w: sz * r * Math.sin(phi) * Math.cos(theta),
+        ring: ri, seg: si,
+        front: Math.cos(theta) > 0.1,
+        g: 'head',
+      });
+    }
+  }
+  // orange pupils floating just above the sockets
+  [-0.38, 0.38].forEach((th, ei) => {
+    for (let i = 0; i < 7; i++) {
+      const a = (Math.PI * 2 * i) / 7;
+      const phi = 0.455 * Math.PI + Math.cos(a) * 0.016 * Math.PI;
+      const theta = th + Math.sin(a) * 0.05;
+      const r = 1.03;
+      pts.push({
+        u: 0.74 * r * Math.sin(phi) * Math.sin(theta),
+        v: -1.02 * r * Math.cos(phi),
+        w: 0.82 * r * Math.sin(phi) * Math.cos(theta),
+        ring: -1, seg: -1, front: true,
+        g: ei === 0 ? 'pupilL' : 'pupilR',
+        pth: theta, pphi: phi,
+      });
+    }
+  });
+  return { pts, RINGS, SEGS };
+};
+
+export const NeuralHead = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, dpr, parts = [], raf, t = 0, last = 0, SEGS = 36;
+    let netPairs = [];
+    const mouse = { x: -9999, y: -9999 };
+
+    const PHASES = [['net', 3.6], ['in', 2.6], ['face', 16.0], ['out', 2.6]];
+    let phaseIdx = reduced ? 2 : 0, phaseT = 0;
+    let nextBlink = 3, blinkT = -1;
+
+    const init = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      W = canvas.offsetWidth; H = canvas.offsetHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const { pts, SEGS: S } = buildHead(W < 860);
+      SEGS = S;
+      parts = pts.map((f) => ({
+        f,
+        x: Math.random() * W, y: Math.random() * H,
+        nx: Math.random() * W, ny: Math.random() * H,
+        wa: Math.random() * Math.PI * 2,
+        stag: Math.random() * 0.4,
+        kk: 0, z: 0, persp: 1,
+        sig: f.g.startsWith('pupil') || Math.random() < 0.02,
+      }));
+      // sparse random adjacency for the network phase (cheap edges)
+      netPairs = [];
+      for (let i = 0; i < Math.min(420, parts.length); i++) {
+        netPairs.push([(Math.random() * parts.length) | 0, (Math.random() * parts.length) | 0]);
+      }
+    };
+
+    const smooth = (x) => { const c = Math.min(Math.max(x, 0), 1); return c * c * (3 - 2 * c); };
+
+    const tick = (now) => {
+      const dt = Math.min((now - last) / 1000 || 0.016, 0.05);
+      last = now; t += dt;
+      if (!reduced) {
+        phaseT += dt;
+        if (phaseT > PHASES[phaseIdx][1]) { phaseT = 0; phaseIdx = (phaseIdx + 1) % 4; }
+      }
+      const [phase, dur] = PHASES[phaseIdx];
+      const k = phase === 'face' ? 1 : phase === 'net' ? 0
+        : phase === 'in' ? smooth(phaseT / dur) : 1 - smooth(phaseT / dur);
+
+      const S = Math.min(H * 0.34, W * 0.24);
+      const cx = W > 860 ? W * 0.72 : W * 0.5;
+      const cy = H * 0.45;
+
+      if (t > nextBlink && blinkT < 0) { blinkT = 0; nextBlink = t + 2.6 + Math.random() * 3.4; }
+      if (blinkT >= 0) { blinkT += dt; if (blinkT > 0.24) blinkT = -1; }
+      const blinkK = blinkT < 0 ? 1 : Math.abs(Math.cos((blinkT / 0.24) * Math.PI));
+
+      const gdx = mouse.x > -999 ? Math.max(-1, Math.min(1, (mouse.x - cx) / (W * 0.45))) : 0;
+      const gdy = mouse.y > -999 ? Math.max(-1, Math.min(1, (mouse.y - cy) / (H * 0.45))) : 0;
+      const yaw = Math.sin(t * 0.28) * 0.55 + gdx * 0.6;
+      const pitch = Math.sin(t * 0.19) * 0.08 + gdy * 0.28;
+      const breathe = 1 + 0.012 * Math.sin(t * 1.4);
+      const cy1 = Math.cos(yaw), sy1 = Math.sin(yaw);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const F = 3.2;
+
+      ctx.clearRect(0, 0, W, H);
+
+      for (const p of parts) {
+        p.wa += (Math.random() - 0.5) * 0.3;
+        p.nx += Math.cos(p.wa) * 0.55; p.ny += Math.sin(p.wa) * 0.55;
+        if (p.nx < 0 || p.nx > W) p.wa = Math.PI - p.wa;
+        if (p.ny < 0 || p.ny > H) p.wa = -p.wa;
+        p.nx = Math.max(0, Math.min(W, p.nx)); p.ny = Math.max(0, Math.min(H, p.ny));
+
+        let { u, v, w } = p.f;
+        if (p.f.g.startsWith('pupil')) {
+          // pupils slide across the socket toward the cursor
+          const th = p.f.pth + gdx * 0.09;
+          const ph = p.f.pphi + gdy * 0.045;
+          const r = 1.03;
+          u = 0.74 * r * Math.sin(ph) * Math.sin(th);
+          v = -1.02 * r * Math.cos(ph);
+          w = 0.82 * r * Math.sin(ph) * Math.cos(th);
+        }
+        // micro-life shimmer
+        v += 0.004 * Math.sin(t * 1.6 + u * 4);
+
+        const x1 = u * cy1 + w * sy1;
+        const z1 = -u * sy1 + w * cy1;
+        const y2 = v * cp - z1 * sp;
+        const z2 = v * sp + z1 * cp;
+        const persp = F / (F - z2 * breathe);
+        const fx = cx + x1 * breathe * S * persp;
+        const fy = cy + y2 * breathe * S * persp;
+
+        const kk = smooth((k - p.stag) / (1 - p.stag));
+        p.x = p.nx + (fx - p.nx) * kk;
+        p.y = p.ny + (fy - p.ny) * kk;
+        p.kk = kk; p.z = z2; p.persp = persp;
+      }
+
+      // network-phase edges (precomputed sparse pairs — cheap)
+      if (k < 0.98) {
+        ctx.lineWidth = 0.6;
+        for (const [i, j] of netPairs) {
+          const a = parts[i], b = parts[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < 150 * 150) {
+            const o = (1 - Math.sqrt(d2) / 150) * 0.3 * (1 - (a.kk + b.kk) / 2);
+            if (o > 0.02) {
+              ctx.strokeStyle = `rgba(19, 19, 17, ${o})`;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+        }
+      }
+
+      // scan rings: connect consecutive segments (the reference look)
+      ctx.lineWidth = 0.75;
+      for (let i = 0; i < parts.length; i++) {
+        const a = parts[i];
+        if (a.f.ring < 0) continue;
+        const jSeg = (a.f.seg + 1) % SEGS;
+        const b = parts[i - a.f.seg + jSeg];
+        if (!b || b.f.ring !== a.f.ring) continue;
+        const zsh = Math.max(0, Math.min(1, ((a.z + b.z) / 2 + 0.9) / 1.8));
+        const o = Math.min(a.kk, b.kk) * (0.06 + zsh * 0.34);
+        if (o < 0.02) continue;
+        ctx.strokeStyle = `rgba(19, 19, 17, ${o})`;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+
+      // points — the dense dot-scan surface
+      for (const p of parts) {
+        const zsh = Math.max(0, Math.min(1, (p.z + 0.9) / 1.8));
+        if (p.sig) {
+          const blink = p.f.g.startsWith('pupil') ? (0.25 + blinkK * 0.75) : 1;
+          ctx.fillStyle = `rgba(255, 92, 0, ${(0.35 + zsh * 0.65) * blink})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, 2.2 * p.persp * blink + 0.4, 0, Math.PI * 2); ctx.fill();
+        } else {
+          const o = (0.16 + zsh * 0.62) * (0.35 + p.kk * 0.65);
+          if (o < 0.03) continue;
+          ctx.fillStyle = `rgba(19, 19, 17, ${o})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, (0.7 + zsh * 1.0) * p.persp, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      // heartbeat under the chin when alive
+      if (k > 0.9) {
+        const pulse = 0.5 + 0.5 * Math.sin(t * 4);
+        ctx.fillStyle = `rgba(255, 92, 0, ${0.3 + pulse * 0.5})`;
+        ctx.beginPath(); ctx.arc(cx, cy + S * 1.35, 3 + pulse * 2, 0, Math.PI * 2); ctx.fill();
+      }
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onMouse = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    init();
+    raf = requestAnimationFrame(tick);
+    window.addEventListener('resize', init);
+    window.addEventListener('mousemove', onMouse, { passive: true });
+    window.addEventListener('mouseout', onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', init);
+      window.removeEventListener('mousemove', onMouse);
+      window.removeEventListener('mouseout', onLeave);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
+};
+
 /* ---- Rotating word ---- */
 export const Rotator = ({ words, interval = 2200 }) => {
   const [idx, setIdx] = useState(0);

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring, useInView } from 'framer-motion';
-import { Cursor, Scramble, Rise, Magnet, CountUp, NeuralFace3D, Tilt } from './fx';
+import { Cursor, Scramble, Rise, Magnet, CountUp, NeuralHead, Tilt } from './fx';
 import './styles.css';
 
 /* =========================================================
@@ -64,7 +64,7 @@ const Nav = () => (
 /* ---------------- Hero ---------------- */
 const Hero = () => (
   <section className="hero" id="top">
-    <NeuralFace3D />
+    <NeuralHead />
     <div className="wrap hero-content">
       <motion.div className="hero-product"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
