@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, useMotionValue, useSpring, useInView } from 'framer-motion';
+import MESH from './facemesh.json';
 
 /* =========================================================
    ESKAY STUDIO — interaction primitives
@@ -955,77 +956,12 @@ export const NeuralFace3D = () => {
   return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
 };
 
-/* ---- NeuralHead: dense 3D scan-style face mask (ref: wireframe scans) ----
-   Sculpted parametric face — nose, eye sockets, brow, lips, cheeks, chin —
-   sampled as an open mask of scan rings + drawn feature lines (almond eyes,
-   brows, nose ridge, lip seam). Assembles from a neural net, turns toward
-   the cursor, breathes, blinks its wireframe eyelids, pupils track you. */
+/* ---- NeuralHead: real 3D face mesh (MediaPipe canonical, Apache-2.0) ----
+   478-vertex face with true topology — defined nose, lips, eye openings,
+   irises — plus 750 surface-dust particles. Assembles from a neural net,
+   holds a 3/4 pose, turns toward the cursor, breathes; irises track you. */
 
-const gaussH = (x, c, s) => Math.exp(-((x - c) ** 2) / (2 * s * s));
 const smoothH = (x) => { const c = Math.min(Math.max(x, 0), 1); return c * c * (3 - 2 * c); };
-const SXH = 0.74, SYH = 1.02, SZH = 0.88;
-
-const sculptH = (theta, phi) => {
-  let b = 0;
-  b += 0.36 * gaussH(theta, 0, 0.22) * gaussH(phi, 0.545 * Math.PI, 0.050 * Math.PI);   // nose
-  b -= 0.11 * (gaussH(theta, 0.45, 0.22) + gaussH(theta, -0.45, 0.22)) * gaussH(phi, 0.452 * Math.PI, 0.050 * Math.PI); // sockets
-  b += 0.09 * gaussH(theta, 0, 0.65) * gaussH(phi, 0.385 * Math.PI, 0.030 * Math.PI);   // brow ridge
-  b += 0.12 * gaussH(theta, 0, 0.28) * gaussH(phi, 0.66 * Math.PI, 0.032 * Math.PI);    // lips
-  b -= 0.05 * gaussH(theta, 0, 0.28) * gaussH(phi, 0.725 * Math.PI, 0.020 * Math.PI);   // under-lip
-  b += 0.06 * gaussH(theta, 0, 0.34) * gaussH(phi, 0.815 * Math.PI, 0.04 * Math.PI);    // chin
-  b += 0.07 * (gaussH(theta, 0.9, 0.35) + gaussH(theta, -0.9, 0.35)) * gaussH(phi, 0.57 * Math.PI, 0.09 * Math.PI); // cheekbones
-  return b;
-};
-const surfH = (theta, phi, lift = 1) => {
-  const jaw = 1 - 0.24 * Math.max(0, (phi / Math.PI - 0.56) / 0.36);
-  const r = (1 + sculptH(theta, phi)) * lift;
-  return {
-    u: SXH * jaw * r * Math.sin(phi) * Math.sin(theta),
-    v: -SYH * r * Math.cos(phi),
-    w: SZH * r * Math.sin(phi) * Math.cos(theta),
-  };
-};
-
-const buildHeadMask = (mobile) => {
-  const RINGS = mobile ? 34 : 48, SEGS = mobile ? 24 : 34;
-  const pts = [];
-  for (let ri = 0; ri < RINGS; ri++) {
-    const phi = Math.PI * (0.09 + 0.75 * (ri / (RINGS - 1)));
-    for (let si = 0; si < SEGS; si++) {
-      const uu = (2 * si) / (SEGS - 1) - 1;
-      const theta = 1.8 * (0.42 * uu + 0.58 * uu ** 3); // dense at the face center
-      const edge = 1 - smoothH((Math.abs(theta) - 1.02) / 0.72);
-      pts.push({ ...surfH(theta, phi), ring: ri, seg: si, fs: 0.22 + 0.78 * edge, g: 'head' });
-    }
-  }
-  // feature accent lines (dynamic: recomputed each frame for blink/gaze)
-  const addLine = (g, n, f) => {
-    for (let i = 0; i < n; i++) {
-      const [th, ph] = f(i / (n - 1));
-      pts.push({ ...surfH(th, ph, 1.012), bth: th, bphi: ph, lift: 1.012, ring: -2, seg: i, fs: 1, g });
-    }
-  };
-  [-0.45, 0.45].forEach((th, ei) => {
-    const s = ei === 0 ? 'L' : 'R';
-    addLine('eyeU' + s, 9, (t) => [th + (t - 0.5) * 0.52, 0.452 * Math.PI - Math.sin(t * Math.PI) * 0.020 * Math.PI]);
-    addLine('eyeD' + s, 9, (t) => [th + (t - 0.5) * 0.52, 0.452 * Math.PI + Math.sin(t * Math.PI) * 0.013 * Math.PI]);
-    addLine('brow' + s, 7, (t) => [th + (t - 0.5) * 0.62, 0.388 * Math.PI - Math.sin(t * Math.PI) * 0.012 * Math.PI]);
-  });
-  addLine('ridge', 7, (t) => [0, (0.42 + t * 0.125) * Math.PI]);
-  addLine('nostr', 7, (t) => [(t - 0.5) * 0.34, 0.578 * Math.PI + Math.sin(t * Math.PI) * 0.010 * Math.PI]);
-  addLine('seam', 11, (t) => [(t - 0.5) * 0.58, 0.693 * Math.PI - Math.sin(t * Math.PI) * 0.005 * Math.PI]);
-  [-0.45, 0.45].forEach((th, ei) => {
-    for (let i = 0; i < 6; i++) {
-      const a = (Math.PI * 2 * i) / 6;
-      pts.push({
-        ...surfH(th + Math.sin(a) * 0.045, 0.452 * Math.PI + Math.cos(a) * 0.010 * Math.PI, 1.018),
-        bth: th + Math.sin(a) * 0.045, bphi: 0.452 * Math.PI + Math.cos(a) * 0.010 * Math.PI, lift: 1.018,
-        ring: -1, seg: -1, fs: 1, g: ei === 0 ? 'pupilL' : 'pupilR',
-      });
-    }
-  });
-  return { pts, RINGS, SEGS };
-};
 
 export const NeuralHead = () => {
   const canvasRef = useRef(null);
@@ -1034,29 +970,33 @@ export const NeuralHead = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let W, H, dpr, parts = [], raf, t = 0, last = 0, SEGS = 34, RINGS = 48;
+    let W, H, dpr, parts = [], edges = [], raf, t = 0, last = 0;
     let netPairs = [];
+    const iris = new Set([...MESH.irisL, ...MESH.irisR]);
     const mouse = { x: -9999, y: -9999 };
 
-    const PHASES = [['net', 3.6], ['in', 2.6], ['face', 18.0], ['out', 2.6]];
+    const PHASES = [['net', 3.6], ['in', 2.6], ['face', 20.0], ['out', 2.6]];
     let phaseIdx = reduced ? 2 : 0, phaseT = 0;
     let nextBlink = 3, blinkT = -1;
 
     const init = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.6);
       W = canvas.offsetWidth; H = canvas.offsetHeight;
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const built = buildHeadMask(W < 860);
-      SEGS = built.SEGS; RINGS = built.RINGS;
-      parts = built.pts.map((f) => ({
-        f,
+      const mobile = W < 860;
+      const dust = mobile ? MESH.d.filter((_, i) => i % 2 === 0) : MESH.d;
+      const all = [...MESH.v.map((p, i) => ({ p, kind: iris.has(i) ? 'iris' : 'vert' })),
+                   ...dust.map((p) => ({ p, kind: 'dust' }))];
+      parts = all.map((a) => ({
+        ...a,
         x: Math.random() * W, y: Math.random() * H,
         nx: Math.random() * W, ny: Math.random() * H,
         wa: Math.random() * Math.PI * 2,
         stag: Math.random() * 0.4,
         kk: 0, z: 0, persp: 1,
       }));
+      edges = MESH.e;
       netPairs = [];
       for (let i = 0; i < 420; i++) {
         netPairs.push([(Math.random() * parts.length) | 0, (Math.random() * parts.length) | 0]);
@@ -1074,24 +1014,33 @@ export const NeuralHead = () => {
       const k = phase === 'face' ? 1 : phase === 'net' ? 0
         : phase === 'in' ? smoothH(phaseT / dur) : 1 - smoothH(phaseT / dur);
 
-      const S = Math.min(H * 0.36, W * 0.25);
+      const S = Math.min(H * 0.38, W * 0.26);
       const cx = W > 860 ? W * 0.72 : W * 0.5;
-      const cy = H * 0.44;
+      const cy = H * 0.45;
 
       if (t > nextBlink && blinkT < 0) { blinkT = 0; nextBlink = t + 2.6 + Math.random() * 3.4; }
-      if (blinkT >= 0) { blinkT += dt; if (blinkT > 0.26) blinkT = -1; }
-      const blinkK = blinkT < 0 ? 1 : Math.abs(Math.cos((blinkT / 0.26) * Math.PI));
+      if (blinkT >= 0) { blinkT += dt; if (blinkT > 0.24) blinkT = -1; }
+      const blinkK = blinkT < 0 ? 1 : Math.abs(Math.cos((blinkT / 0.24) * Math.PI));
 
       const gdx = mouse.x > -999 ? Math.max(-1, Math.min(1, (mouse.x - cx) / (W * 0.45))) : 0;
       const gdy = mouse.y > -999 ? Math.max(-1, Math.min(1, (mouse.y - cy) / (H * 0.45))) : 0;
-      const yaw = Math.sin(t * 0.26) * 0.34 + gdx * 0.5;
-      const pitch = Math.sin(t * 0.18) * 0.06 + gdy * 0.24;
+      const yaw = -0.28 + Math.sin(t * 0.24) * 0.14 + gdx * 0.45;  // resting 3/4 pose
+      const pitch = Math.sin(t * 0.17) * 0.05 + gdy * 0.22;
       const breathe = 1 + 0.012 * Math.sin(t * 1.4);
       const cy1 = Math.cos(yaw), sy1 = Math.sin(yaw);
       const cp = Math.cos(pitch), sp = Math.sin(pitch);
       const F = 3.2;
 
       ctx.clearRect(0, 0, W, H);
+
+      // depth backdrop: soft disc behind the head to pop the silhouette
+      if (k > 0.05) {
+        const grad = ctx.createRadialGradient(cx, cy, S * 0.2, cx, cy, S * 1.5);
+        grad.addColorStop(0, `rgba(19, 19, 17, ${0.055 * k})`);
+        grad.addColorStop(1, 'rgba(19, 19, 17, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - S * 1.6, cy - S * 1.6, S * 3.2, S * 3.2);
+      }
 
       for (const p of parts) {
         p.wa += (Math.random() - 0.5) * 0.3;
@@ -1100,18 +1049,9 @@ export const NeuralHead = () => {
         if (p.ny < 0 || p.ny > H) p.wa = -p.wa;
         p.nx = Math.max(0, Math.min(W, p.nx)); p.ny = Math.max(0, Math.min(H, p.ny));
 
-        let { u, v, w } = p.f;
-        const g = p.f.g;
-        if (p.f.ring === -2 && (g[3] === 'U' || g[3] === 'D' || g.startsWith('eye'))) {
-          // eyelids blink: arcs collapse toward the eye line
-          const ph = 0.452 * Math.PI + (p.f.bphi - 0.452 * Math.PI) * blinkK;
-          ({ u, v, w } = surfH(p.f.bth, ph, p.f.lift));
-        } else if (g.startsWith('pupil')) {
-          const th = p.f.bth + gdx * 0.08;
-          const ph = p.f.bphi + gdy * 0.04;
-          ({ u, v, w } = surfH(th, ph, p.f.lift));
-        }
-        v += 0.004 * Math.sin(t * 1.6 + u * 4);
+        let u = p.p[0], v = -p.p[1], w = p.p[2];
+        if (p.kind === 'iris') { u += gdx * 0.07; v += gdy * 0.045; }
+        v += 0.004 * Math.sin(t * 1.6 + u * 4); // micro-life shimmer
 
         const x1 = u * cy1 + w * sy1;
         const z1 = -u * sy1 + w * cy1;
@@ -1127,7 +1067,7 @@ export const NeuralHead = () => {
         p.kk = kk; p.z = z2; p.persp = persp;
       }
 
-      // network edges (sparse, fade as face forms)
+      // network edges while scattered
       if (k < 0.98) {
         ctx.lineWidth = 0.6;
         for (const [i, j] of netPairs) {
@@ -1144,53 +1084,35 @@ export const NeuralHead = () => {
         }
       }
 
-      const zshOf = (a, b) => Math.max(0, Math.min(1, ((a.z + b.z) / 2 + 0.9) / 1.8));
-
-      // scan rings (open, no wrap)
-      ctx.lineWidth = 0.75;
-      for (let i = 0; i < parts.length; i++) {
-        const a = parts[i];
-        if (a.f.ring < 0 || a.f.seg >= SEGS - 1) continue;
-        const b = parts[i + 1];
-        const o = (0.08 + zshOf(a, b) * 0.32) * Math.min(a.f.fs, b.f.fs) * Math.min(a.kk, b.kk);
-        if (o < 0.02) continue;
-        ctx.strokeStyle = `rgba(19, 19, 17, ${o})`;
-        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-      }
-      // meridian grid (every 4th column)
-      ctx.lineWidth = 0.6;
-      for (let i = 0; i < parts.length; i++) {
-        const a = parts[i];
-        if (a.f.ring < 0 || a.f.ring >= RINGS - 1 || a.f.seg % 4 !== 0) continue;
-        const b = parts[i + SEGS];
-        if (!b || !b.f || b.f.ring !== a.f.ring + 1) continue;
-        const o = (0.05 + zshOf(a, b) * 0.18) * Math.min(a.f.fs, b.f.fs) * Math.min(a.kk, b.kk);
-        if (o < 0.02) continue;
-        ctx.strokeStyle = `rgba(19, 19, 17, ${o})`;
-        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-      }
-      // feature accent lines
-      ctx.lineWidth = 1.5;
-      for (let i = 0; i < parts.length - 1; i++) {
-        const a = parts[i], b = parts[i + 1];
-        if (a.f.ring !== -2 || b.f.ring !== -2 || a.f.g !== b.f.g) continue;
-        const o = (0.28 + zshOf(a, b) * 0.55) * Math.min(a.kk, b.kk);
+      // face wireframe with hard depth shading (front bold, back ghost)
+      ctx.lineWidth = 0.7;
+      for (const [i, j] of edges) {
+        const a = parts[i], b = parts[j];
+        const z = (a.z + b.z) / 2;
+        const zsh = Math.max(0, Math.min(1, (z + 0.55) / 1.35));
+        const o = (0.03 + zsh * zsh * 0.42) * Math.min(a.kk, b.kk);
         if (o < 0.02) continue;
         ctx.strokeStyle = `rgba(19, 19, 17, ${o})`;
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       }
 
-      // nodes
+      // points
       for (const p of parts) {
-        const zsh = Math.max(0, Math.min(1, (p.z + 0.9) / 1.8));
-        if (p.f.g.startsWith('pupil')) {
-          ctx.fillStyle = `rgba(255, 92, 0, ${(0.35 + zsh * 0.6) * (0.3 + blinkK * 0.7)})`;
-          ctx.beginPath(); ctx.arc(p.x, p.y, 1.9 * p.persp, 0, Math.PI * 2); ctx.fill();
-        } else if (p.f.ring >= 0) {
-          const o = (0.15 + zsh * 0.58) * p.f.fs * (0.35 + p.kk * 0.65);
+        const zsh = Math.max(0, Math.min(1, (p.z + 0.55) / 1.35));
+        if (p.kind === 'iris') {
+          const a = (0.4 + zsh * 0.6) * (0.25 + blinkK * 0.75);
+          ctx.fillStyle = `rgba(255, 92, 0, ${a})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, 2.1 * p.persp, 0, Math.PI * 2); ctx.fill();
+        } else if (p.kind === 'vert') {
+          const o = (0.12 + zsh * zsh * 0.66) * (0.35 + p.kk * 0.65);
           if (o < 0.03) continue;
           ctx.fillStyle = `rgba(19, 19, 17, ${o})`;
-          ctx.beginPath(); ctx.arc(p.x, p.y, (0.7 + zsh * 0.9) * p.persp, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x, p.y, (0.7 + zsh * 1.2) * p.persp, 0, Math.PI * 2); ctx.fill();
+        } else {
+          const o = (0.05 + zsh * zsh * 0.4) * p.kk;
+          if (o < 0.03) continue;
+          ctx.fillStyle = `rgba(19, 19, 17, ${o})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, (0.4 + zsh * 0.7) * p.persp, 0, Math.PI * 2); ctx.fill();
         }
       }
 
@@ -1198,7 +1120,7 @@ export const NeuralHead = () => {
       if (k > 0.9) {
         const pulse = 0.5 + 0.5 * Math.sin(t * 4);
         ctx.fillStyle = `rgba(255, 92, 0, ${0.3 + pulse * 0.5})`;
-        ctx.beginPath(); ctx.arc(cx, cy + S * 1.3, 3 + pulse * 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy + S * 1.25, 3 + pulse * 2, 0, Math.PI * 2); ctx.fill();
       }
 
       raf = requestAnimationFrame(tick);
