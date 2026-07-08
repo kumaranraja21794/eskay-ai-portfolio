@@ -686,6 +686,275 @@ export const NeuralFace = () => {
   return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
 };
 
+/* ---- NeuralFace3D: neural network → rotating 3D face point-cloud ----
+   Feature points live on an ellipsoid head surface (nose protrudes,
+   eyes recess). The head slowly turns, breathes, blinks — and rotates
+   to face the visitor's cursor. Perspective projection + depth shading
+   make it read as a hologram-like 3D scan. */
+
+const qb3 = (p0, p1, p2, n, g) => {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c = t * t;
+    pts.push({ u: a * p0[0] + b * p1[0] + c * p2[0], v: a * p0[1] + b * p1[1] + c * p2[1], g });
+  }
+  return pts;
+};
+const el3 = (cx, cy, rx, ry, n, g) => {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n;
+    pts.push({ u: cx + Math.cos(a) * rx, v: cy + Math.sin(a) * ry, g });
+  }
+  return pts;
+};
+
+const buildFace3D = () => {
+  const A = 0.62, B = 0.82, C = 0.60; // ellipsoid radii (x, y, depth)
+  const depth = (u, v) => C * Math.sqrt(Math.max(0, 1 - (u / A) ** 2 - (v / B) ** 2));
+  const P = [];
+  const push = (arr, wf) => arr.forEach((p, i) => P.push({ ...p, w: wf(p, i, arr.length) }));
+
+  // head rim (silhouette ring — stays near z=0 so the skull has volume)
+  push(el3(0, 0.02, 0.60, 0.78, 46, 'rim'), () => 0.04);
+  // brows (on surface)
+  push(qb3([-0.40, -0.30], [-0.26, -0.40], [-0.12, -0.32], 8, 'browL'), (p) => depth(p.u, p.v) * 0.98);
+  push(qb3([0.12, -0.32], [0.26, -0.40], [0.40, -0.30], 8, 'browR'), (p) => depth(p.u, p.v) * 0.98);
+  // eyes (slightly recessed)
+  push(el3(-0.26, -0.16, 0.125, 0.055, 12, 'eyeL'), (p) => depth(p.u, p.v) * 0.88);
+  push(el3(0.26, -0.16, 0.125, 0.055, 12, 'eyeR'), (p) => depth(p.u, p.v) * 0.88);
+  // pupils (orange)
+  push(el3(-0.26, -0.16, 0.028, 0.028, 6, 'pupilL'), (p) => depth(p.u, p.v) * 0.90);
+  push(el3(0.26, -0.16, 0.028, 0.028, 6, 'pupilR'), (p) => depth(p.u, p.v) * 0.90);
+  // nose — bridge protrudes increasingly toward the tip
+  push(qb3([-0.01, -0.12], [-0.04, 0.02], [-0.06, 0.12], 7, 'nose'), (p, i, n) => depth(p.u, p.v) + 0.06 + (i / n) * 0.15);
+  push(qb3([-0.06, 0.12], [0.01, 0.19], [0.08, 0.12], 7, 'nose2'), (p, i, n) => depth(p.u, p.v) + 0.10 + Math.sin((i / n) * Math.PI) * 0.08);
+  // lips (gently forward)
+  push(qb3([-0.22, 0.42], [0.00, 0.34], [0.22, 0.42], 12, 'lipT'), (p) => depth(p.u, p.v) + 0.05);
+  push(qb3([-0.22, 0.42], [0.00, 0.52], [0.22, 0.42], 12, 'lipB'), (p) => depth(p.u, p.v) + 0.05);
+  // scan-mesh: latitude contours across the face surface
+  [-0.52, 0.02, 0.24, 0.62].forEach((v, li) => {
+    const umax = A * Math.sqrt(Math.max(0, 1 - (v / B) ** 2)) * 0.92;
+    for (let i = 0; i < 13; i++) {
+      const u = -umax + (2 * umax * i) / 12;
+      P.push({ u, v, w: depth(u, v), g: `lat${li}` });
+    }
+  });
+  // meridian contours
+  [-0.36, 0.36].forEach((u, mi) => {
+    const vmax = B * Math.sqrt(Math.max(0, 1 - (u / A) ** 2)) * 0.9;
+    for (let i = 0; i < 12; i++) {
+      const v = -vmax + (2 * vmax * i) / 11;
+      P.push({ u, v, w: depth(u, v), g: `mer${mi}` });
+    }
+  });
+  return P;
+};
+
+export const NeuralFace3D = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, dpr, parts = [], raf, t = 0, last = 0;
+    const mouse = { x: -9999, y: -9999 };
+    const facePts = buildFace3D();
+    const HALO_N = 42;
+
+    const PHASES = [['net', 4.0], ['in', 2.4], ['face', 14.0], ['out', 2.4]];
+    let phaseIdx = reduced ? 2 : 0, phaseT = 0;
+    let nextBlink = 2.5, blinkT = -1, nextSmile = 6, smileT = -1;
+
+    const init = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+      W = canvas.offsetWidth; H = canvas.offsetHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      parts = [];
+      for (let i = 0; i < facePts.length + HALO_N; i++) {
+        const face = i < facePts.length ? facePts[i] : null;
+        parts.push({
+          x: Math.random() * W, y: Math.random() * H,
+          nx: Math.random() * W, ny: Math.random() * H,
+          wa: Math.random() * Math.PI * 2,
+          face,
+          haloA: Math.random() * Math.PI * 2,
+          haloT: (Math.random() - 0.5) * 0.5,
+          stag: Math.random() * 0.35,
+          sig: face ? face.g.startsWith('pupil') : Math.random() < 0.15,
+        });
+      }
+    };
+
+    const smooth = (x) => { const c = Math.min(Math.max(x, 0), 1); return c * c * (3 - 2 * c); };
+
+    const tick = (now) => {
+      const dt = Math.min((now - last) / 1000 || 0.016, 0.05);
+      last = now; t += dt;
+      if (!reduced) {
+        phaseT += dt;
+        if (phaseT > PHASES[phaseIdx][1]) { phaseT = 0; phaseIdx = (phaseIdx + 1) % 4; }
+      }
+      const [phase, dur] = PHASES[phaseIdx];
+      const k = phase === 'face' ? 1 : phase === 'net' ? 0
+        : phase === 'in' ? smooth(phaseT / dur) : 1 - smooth(phaseT / dur);
+
+      const S = Math.min(H * 0.42, W * 0.30);
+      const cx = W > 860 ? W * 0.72 : W * 0.5;
+      const cy = H * 0.46;
+
+      // life timers
+      if (t > nextBlink && blinkT < 0) { blinkT = 0; nextBlink = t + 2.4 + Math.random() * 3.6; }
+      if (blinkT >= 0) { blinkT += dt; if (blinkT > 0.26) blinkT = -1; }
+      const blinkK = blinkT < 0 ? 1 : Math.abs(Math.cos((blinkT / 0.26) * Math.PI));
+      if (t > nextSmile && smileT < 0) { smileT = 0; nextSmile = t + 7 + Math.random() * 5; }
+      if (smileT >= 0) { smileT += dt; if (smileT > 1.4) smileT = -1; }
+      const smileK = smileT < 0 ? 0 : Math.sin((smileT / 1.4) * Math.PI);
+
+      // gaze → head rotation (the whole 3D head turns toward the cursor)
+      const gdx = mouse.x > -999 ? Math.max(-1, Math.min(1, (mouse.x - cx) / (W * 0.45))) : 0;
+      const gdy = mouse.y > -999 ? Math.max(-1, Math.min(1, (mouse.y - cy) / (H * 0.45))) : 0;
+      const yaw = Math.sin(t * 0.32) * 0.42 + gdx * 0.55;   // idle turn + follow cursor
+      const pitch = Math.sin(t * 0.21) * 0.10 + gdy * 0.30;
+      const breathe = 1 + 0.012 * Math.sin(t * 1.5);
+      const cy1 = Math.cos(yaw), sy1 = Math.sin(yaw);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const F = 3.1; // perspective focal
+
+      ctx.clearRect(0, 0, W, H);
+
+      for (const p of parts) {
+        // wandering network anchor
+        p.wa += (Math.random() - 0.5) * 0.3;
+        p.nx += Math.cos(p.wa) * 0.5; p.ny += Math.sin(p.wa) * 0.5;
+        if (p.nx < 0 || p.nx > W) p.wa = Math.PI - p.wa;
+        if (p.ny < 0 || p.ny > H) p.wa = -p.wa;
+        p.nx = Math.max(0, Math.min(W, p.nx)); p.ny = Math.max(0, Math.min(H, p.ny));
+
+        // 3D face-space coordinates
+        let u, v, w;
+        if (p.face) {
+          u = p.face.u; v = p.face.v; w = p.face.w;
+          const g = p.face.g;
+          if (g === 'eyeL' || g === 'eyeR' || g === 'pupilL' || g === 'pupilR') {
+            v = -0.16 + (v + 0.16) * blinkK;
+            if (g.startsWith('pupil')) { u += gdx * 0.03; v += gdy * 0.025; }
+          }
+          if ((g === 'lipT' || g === 'lipB') && Math.abs(u) > 0.13) v -= smileK * 0.045;
+          v += 0.005 * Math.sin(t * 1.5 + u * 3);
+        } else {
+          p.haloA += dt * 0.18;
+          u = Math.cos(p.haloA) * 1.05;
+          v = 0.02 + Math.sin(p.haloA) * 0.25 + p.haloT;
+          w = Math.sin(p.haloA) * 1.05 * 0.55; // tilted 3D orbit ring
+        }
+
+        // rotate: yaw (Y axis) then pitch (X axis)
+        const x1 = u * cy1 + w * sy1;
+        const z1 = -u * sy1 + w * cy1;
+        const y2 = v * cp - z1 * sp;
+        const z2 = v * sp + z1 * cp;
+        const persp = F / (F - z2 * breathe);
+        const fx = cx + x1 * breathe * S * persp;
+        const fy = cy + y2 * breathe * S * persp;
+
+        const kk = smooth((k - p.stag) / (1 - p.stag));
+        p.x = p.nx + (fx - p.nx) * kk;
+        p.y = p.ny + (fy - p.ny) * kk;
+        p.kk = kk;
+        p.z = z2; // depth for shading
+        p.persp = persp;
+      }
+
+      // proximity edges (network feel, fades as the face forms)
+      const LINK = 92;
+      for (let i = 0; i < parts.length; i++) {
+        const a = parts[i];
+        for (let j = i + 1; j < parts.length; j++) {
+          const b = parts[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < LINK * LINK) {
+            const d = Math.sqrt(d2);
+            const faceMix = (a.kk + b.kk) / 2;
+            const o = (1 - d / LINK) * (0.30 - faceMix * 0.20);
+            if (o > 0.015) {
+              ctx.strokeStyle = `rgba(19, 19, 17, ${o})`;
+              ctx.lineWidth = 0.7;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+        }
+      }
+
+      // feature + scan-mesh strokes with depth shading
+      for (let i = 0; i < facePts.length - 1; i++) {
+        const a = parts[i], b = parts[i + 1];
+        if (a.face.g !== b.face.g) continue;
+        const zsh = Math.max(0, Math.min(1, ((a.z + b.z) / 2 + 0.7) / 1.4)); // front bright, back faint
+        const isMesh = a.face.g.startsWith('lat') || a.face.g.startsWith('mer');
+        const base = isMesh ? 0.30 : 0.72;
+        const o = Math.min(a.kk, b.kk) * base * (0.25 + zsh * 0.75);
+        if (o < 0.02) continue;
+        ctx.strokeStyle = a.face.g.startsWith('pupil')
+          ? `rgba(255, 92, 0, ${Math.min(1, o + 0.3)})` : `rgba(19, 19, 17, ${o})`;
+        ctx.lineWidth = isMesh ? 0.8 : 1.5;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+      // close the rim ring
+      {
+        const a = parts[0], b = parts[45];
+        const o = Math.min(a.kk, b.kk) * 0.6;
+        if (o > 0.02) {
+          ctx.strokeStyle = `rgba(19,19,17,${o})`; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      }
+
+      // nodes with depth-scaled size + alpha
+      for (const p of parts) {
+        const zsh = p.face ? Math.max(0, Math.min(1, (p.z + 0.7) / 1.4)) : 0.7;
+        const r = (p.sig ? 2.4 : 1.6) * (p.face ? (0.6 + zsh * 0.7) * p.persp : 1);
+        const alpha = p.sig ? 0.55 + zsh * 0.45 : (0.30 + p.kk * 0.25) * (0.4 + zsh * 0.6);
+        ctx.fillStyle = p.sig ? `rgba(255, 92, 0, ${alpha})` : `rgba(19, 19, 17, ${alpha})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.6, r), 0, Math.PI * 2); ctx.fill();
+      }
+
+      // heartbeat under the chin when fully alive
+      if (k > 0.9) {
+        const pulse = 0.5 + 0.5 * Math.sin(t * 4);
+        ctx.fillStyle = `rgba(255, 92, 0, ${0.3 + pulse * 0.5})`;
+        ctx.beginPath(); ctx.arc(cx, cy + S * 1.08, 3 + pulse * 2, 0, Math.PI * 2); ctx.fill();
+      }
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    const onMouse = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    init();
+    raf = requestAnimationFrame(tick);
+    window.addEventListener('resize', init);
+    window.addEventListener('mousemove', onMouse, { passive: true });
+    window.addEventListener('mouseout', onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', init);
+      window.removeEventListener('mousemove', onMouse);
+      window.removeEventListener('mouseout', onLeave);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="hero-canvas" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
+};
+
 /* ---- Rotating word ---- */
 export const Rotator = ({ words, interval = 2200 }) => {
   const [idx, setIdx] = useState(0);
