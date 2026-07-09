@@ -12,7 +12,7 @@ import TextReveal from './TextReveal';
 const modelData = {
   alpha: {
     name: 'Alpha-Max',
-    color: '#8b5cf6', // Violet
+    color: '#FF6B4A', // Orange (primary)
     badge: 'Momentum',
     stats: {
       return: '+184.2%',
@@ -64,7 +64,7 @@ const modelData = {
   },
   neural: {
     name: 'Neural-Net',
-    color: '#ff6b4a', // Orange
+    color: '#f59e0b', // Amber (data series)
     badge: 'Adaptive AI',
     stats: {
       return: '+242.8%',
@@ -400,7 +400,7 @@ const CaseStudyAlpha = () => {
   const challengeSolutionCards = [
     {
       icon: Activity,
-      color: '#8b5cf6',
+      color: '#FF6B4A',
       title: 'Live Trading Screen',
       challenges: [
         'Overlapping trend lines created noise.',
@@ -460,7 +460,7 @@ const CaseStudyAlpha = () => {
   const validationTasks = [
     {
       icon: Target,
-      color: '#8b5cf6',
+      color: '#FF6B4A',
       task: 'Identify Best Performing Model',
       result: 'Users relied on visual hierarchy and badges instead of scanning raw rows.',
     },
@@ -507,7 +507,7 @@ const CaseStudyAlpha = () => {
   const learningCards = [
     {
       icon: Info,
-      color: '#8b5cf6',
+      color: '#FF6B4A',
       title: 'Clarity Over Features',
       body: 'In data-heavy products, removing noise creates more value than adding more surface area.',
     },
@@ -638,7 +638,7 @@ const CaseStudyAlpha = () => {
       <section className="cs-section bg-dark text-white">
         <div className="container">
           <div className="section-header" style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <span className="cs-tag" style={{ color: '#8b5cf6', borderColor: '#8b5cf6' }}>Interactive Comparison</span>
+            <span className="cs-tag" style={{ color: '#FF6B4A', borderColor: '#FF6B4A' }}>Interactive Comparison</span>
             <TextReveal mode="char" as="h2" style={{ fontSize: '3.5rem', marginTop: '1rem' }}>The Evolution of Arena.</TextReveal>
             <p style={{ maxWidth: '700px', margin: '2rem auto', opacity: 0.7 }}>Interact with the slider below to see how we transformed the interface from a data-heavy technical view into a modern, decision-first experience.</p>
           </div>
@@ -674,8 +674,8 @@ const CaseStudyAlpha = () => {
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          background: 'rgba(139, 92, 246, 0.2)',
-                          boxShadow: 'inset 0 0 0 1px rgba(139, 92, 246, 0.4)',
+                          background: 'rgba(255, 107, 74, 0.2)',
+                          boxShadow: 'inset 0 0 0 1px rgba(255, 107, 74, 0.4)',
                           borderRadius: '100px',
                           zIndex: -1
                         }}
@@ -702,7 +702,7 @@ const CaseStudyAlpha = () => {
             </motion.div>
             
             <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-              <p style={{ fontSize: '1.2rem', fontWeight: '500', color: '#8b5cf6' }}>{comparisonData[activeTab].desc}</p>
+              <p style={{ fontSize: '1.2rem', fontWeight: '500', color: '#FF6B4A' }}>{comparisonData[activeTab].desc}</p>
             </div>
           </div>
         </div>
@@ -768,7 +768,7 @@ const CaseStudyAlpha = () => {
       {/* Model Performance Simulator Section */}
       <section className="cs-section bg-dark text-white performance-section">
         <div className="container cs-grid">
-          <div className="cs-label" style={{ color: '#8b5cf6' }}>Interactive Sim</div>
+          <div className="cs-label" style={{ color: '#FF6B4A' }}>Interactive Sim</div>
           <div className="cs-content">
             <TextReveal mode="char" as="h2">Model Performance Simulator</TextReveal>
             <p className="large-p" style={{ opacity: 0.8, color: 'var(--text-secondary)' }}>
@@ -897,8 +897,8 @@ const CaseStudyAlpha = () => {
       {/* Key Learnings */}
       <section className="cs-section bg-dark text-white" style={{ padding: '6.5rem 0', overflow: 'hidden', position: 'relative' }}>
         {/* Ambient Glow Orbs */}
-        <div style={{ position: 'absolute', top: '10%', left: '20%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 60%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 60%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', top: '10%', left: '20%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(255,107,74,0.12) 0%, transparent 60%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(255,107,74,0.06) 0%, transparent 60%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }}></div>
 
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>

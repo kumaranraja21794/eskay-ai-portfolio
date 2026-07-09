@@ -5787,3 +5787,172 @@ footer {
 }
 
 
+
+/* ══════════════════════════════════════════════════════
+   CASE STUDY — UNIFIED DARK + ORANGE THEME
+   (matches main site signature #FF6B4A / Bricolage Grotesque)
+   Scoped to .case-study-page so it overrides the older
+   light-first case-study styles by specificity + source order.
+   ══════════════════════════════════════════════════════ */
+.case-study-page {
+  --accent: #FF6B4A;
+  --accent-soft: rgba(255, 107, 74, 0.14);
+  --accent-line: rgba(255, 107, 74, 0.35);
+  --cs-bg: #0b0b0c;
+  --cs-panel: rgba(255, 255, 255, 0.03);
+  --cs-panel-2: rgba(255, 255, 255, 0.05);
+  --cs-border: rgba(255, 255, 255, 0.08);
+  --cs-text: #f5f5f5;
+  --cs-text-dim: rgba(255, 255, 255, 0.62);
+  --cs-text-faint: rgba(255, 255, 255, 0.4);
+  background: var(--cs-bg);
+  color: var(--cs-text);
+}
+
+/* Page-wide selection + link accents */
+.case-study-page ::selection { background: var(--accent); color: #14100e; }
+
+/* Watermarks */
+.case-study-page .cs-watermark { color: rgba(255, 255, 255, 0.035); }
+.case-study-page .cs-hero::before { color: rgba(255, 255, 255, 0.028); }
+
+/* Back link */
+.case-study-page .back-link { color: var(--cs-text-dim); }
+.case-study-page .back-link:hover { color: var(--accent); }
+
+/* Hero */
+.case-study-page .cs-hero {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,107,74,0.10) 0%, transparent 42%),
+    radial-gradient(circle at 0% 100%, rgba(255,107,74,0.05) 0%, transparent 45%),
+    var(--cs-bg);
+}
+.case-study-page .cs-hero h1 { color: var(--cs-text); }
+.case-study-page .cs-hero h1 span { color: var(--accent); opacity: 0.92; }
+.case-study-page .cs-lead { color: var(--cs-text); }
+.case-study-page .cs-tag { color: var(--accent); }
+.case-study-page .cs-tag::before { background: var(--accent); opacity: 0.6; }
+
+/* Meta strip */
+.case-study-page .cs-meta-strip { border-top-color: var(--cs-border); }
+.case-study-page .cs-meta-strip-item label { color: var(--cs-text-faint); }
+.case-study-page .cs-meta-strip-item span { color: var(--cs-text); }
+.case-study-page .cs-meta-strip-divider { background: var(--cs-border); }
+
+/* Figma buttons -> dark glass with orange hover */
+.case-study-page .cs-figma-btn {
+  background: rgba(255,255,255,0.04);
+  color: var(--cs-text);
+  border: 1.5px solid var(--cs-border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+.case-study-page .cs-figma-btn:hover {
+  background: var(--accent);
+  color: #14100e;
+  border-color: var(--accent);
+  box-shadow: 0 12px 32px rgba(255,107,74,0.35);
+}
+.case-study-page .btn-figma:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #14100e;
+  box-shadow: 0 12px 30px rgba(255,107,74,0.32);
+}
+
+/* Primary CTA button (Back to All Works) */
+.case-study-page .btn {
+  background: var(--accent);
+  color: #14100e;
+  border-color: var(--accent);
+}
+.case-study-page .btn:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 12px 30px rgba(255,107,74,0.3);
+}
+
+/* Sections — everything dark now */
+.case-study-page .cs-section.bg-light { background: #121214; color: var(--cs-text); }
+.case-study-page .cs-section.bg-dark { background: #0e0e10; color: var(--cs-text); }
+.case-study-page .cs-closing { background: #121214; }
+
+.case-study-page .cs-section.bg-light h2,
+.case-study-page .cs-section.bg-light h3,
+.case-study-page .cs-section.bg-light h4,
+.case-study-page .closing-content h2,
+.case-study-page .cs-content h2 { color: var(--cs-text); }
+
+.case-study-page .cs-section.bg-light p,
+.case-study-page .cs-content p,
+.case-study-page .closing-content p,
+.case-study-page .large-p { color: var(--cs-text-dim); }
+
+.case-study-page .cs-label { color: var(--accent); }
+.case-study-page .cs-section.bg-light .cs-label,
+.case-study-page .text-accent,
+.case-study-page .text-success { color: var(--accent) !important; }
+
+/* Eyebrows / small labels */
+.case-study-page .cs-compact-eyebrow { color: var(--cs-text-faint); }
+
+/* Cards — unified dark glass */
+.case-study-page .cs-compact-card,
+.case-study-page .cs-solution-card,
+.case-study-page .cs-impact-card,
+.case-study-page .problem-card,
+.case-study-page .problem-card-v2,
+.case-study-page .learning-card,
+.case-study-page .validation-box,
+.case-study-page .stat-card,
+.case-study-page .compare-item {
+  background: var(--cs-panel);
+  border: 1px solid var(--cs-border);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.4);
+}
+.case-study-page .cs-compact-card p,
+.case-study-page .cs-solution-card p,
+.case-study-page .cs-impact-card p,
+.case-study-page .learning-card p { color: var(--cs-text-dim); }
+.case-study-page .cs-compact-card:hover,
+.case-study-page .cs-solution-card:hover,
+.case-study-page .cs-impact-card:hover {
+  border-color: var(--accent-line);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+}
+
+.case-study-page .cs-solution-head h3 { color: var(--cs-text); }
+.case-study-page .cs-solution-icon { background: var(--accent-soft); }
+.case-study-page .cs-mini-list li { color: var(--cs-text-dim); }
+.case-study-page .cs-process-card h4,
+.case-study-page .cs-validation-card h4,
+.case-study-page .cs-learning-card h4,
+.case-study-page .cs-impact-card h4 { color: var(--cs-text); }
+
+/* Impact metric number -> orange */
+.case-study-page .impact-metric-number { color: var(--accent); }
+.case-study-page .cs-impact-card .impact-metric-number { border-right-color: var(--cs-border); }
+.case-study-page .trait-dot { background: var(--accent); }
+.case-study-page .trait span { color: var(--cs-text) !important; }
+
+/* Tables */
+.case-study-page .comparison-table th {
+  color: var(--cs-text);
+  border-bottom-color: var(--cs-border);
+}
+.case-study-page .comparison-table td {
+  color: var(--cs-text-dim);
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+.case-study-page .comparison-table td:first-child { color: var(--cs-text); }
+
+/* Screenshot cards (Bitwise mockup grid) */
+.case-study-page .screenshot-card {
+  background: var(--cs-panel) !important;
+  border: 1px solid var(--cs-border) !important;
+}
+
+/* Snapshot / compact card eyebrow accent */
+.case-study-page .cs-compact-card .cs-compact-eyebrow { color: var(--accent); }
+
+/* Section tag pills within dark sections */
+.case-study-page .cs-section .cs-tag { color: var(--accent); }
+
