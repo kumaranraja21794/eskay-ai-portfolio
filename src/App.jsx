@@ -3,7 +3,6 @@ import './designova.css';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Lenis from '@studio-freight/lenis';
 import Home from './studio/Home';
-import Header from './components/Header';
 import ProgressBar from './components/ProgressBar';
 import CaseStudyAlpha from './components/CaseStudyAlpha';
 import CaseStudyBitwise from './components/CaseStudyBitwise';
@@ -19,7 +18,6 @@ const ScrollToTop = () => {
 const CaseStudyLayout = ({ children }) => (
   <>
     <ProgressBar />
-    <Header />
     {children}
   </>
 );
