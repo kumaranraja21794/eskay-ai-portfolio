@@ -256,7 +256,7 @@ const CaseStudyAlpha = () => {
       <div className="cs-bar">
         <div className="wrap cs-bar-inner">
           <Link to="/" className="cs-back"><ArrowLeft size={15} /> Index</Link>
-          <Link to="/" className="cs-bar-logo">ESKAY<sup>®</sup></Link>
+          <Link to="/" className="cs-bar-logo">ATLAS<sup>®</sup></Link>
           <span className="cs-bar-code">FILE / FIN-2025</span>
         </div>
       </div>
@@ -273,11 +273,11 @@ const CaseStudyAlpha = () => {
           </h1>
           <p className="cs-lead">
             <b>Alpha Arena</b> is an AI trading competition platform where models execute trades and compete on performance.
-            I led the UX transformation that turns dense financial data into an insight-first dashboard.
+            Atlas led the UX transformation that turns dense financial data into an insight-first dashboard.
           </p>
 
           <div className="cs-specstrip">
-            <div className="cs-spec-item"><label>Role</label><span>UX Designer</span></div>
+            <div className="cs-spec-item"><label>Team</label><span>Atlas — UX Design</span></div>
             <div className="cs-spec-item"><label>Focus</label><span>Data Viz</span></div>
             <div className="cs-spec-item sig"><label>Outcome</label><span>+65% Speed</span></div>
             <div className="cs-spec-item cs-spec-cta">
@@ -498,7 +498,7 @@ const CaseStudyAlpha = () => {
       <div className="footer-zone">
         <div className="wrap">
           <footer className="footer">
-            <span>© MMXXVI ESKAY® — DESIGNED BY A HUMAN, ACCELERATED BY AI</span>
+            <span>© MMXXVI ATLAS® — DESIGNED BY HUMANS, ACCELERATED BY AI</span>
             <span>ALPHA ARENA / FIN-2025</span>
           </footer>
         </div>

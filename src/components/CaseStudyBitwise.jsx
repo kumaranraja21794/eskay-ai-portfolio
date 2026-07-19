@@ -58,7 +58,7 @@ const CaseStudyBitwise = () => {
       <div className="cs-bar">
         <div className="wrap cs-bar-inner">
           <Link to="/" className="cs-back"><ArrowLeft size={15} /> Index</Link>
-          <Link to="/" className="cs-bar-logo">ESKAY<sup>®</sup></Link>
+          <Link to="/" className="cs-bar-logo">ATLAS<sup>®</sup></Link>
           <span className="cs-bar-code">FILE / CRY-2025</span>
         </div>
       </div>
@@ -79,7 +79,7 @@ const CaseStudyBitwise = () => {
           </p>
 
           <div className="cs-specstrip">
-            <div className="cs-spec-item"><label>Role</label><span>Product Designer</span></div>
+            <div className="cs-spec-item"><label>Team</label><span>Atlas — Product Design</span></div>
             <div className="cs-spec-item"><label>Focus</label><span>Mobile UX</span></div>
             <div className="cs-spec-item sig"><label>Outcome</label><span>Clear Depth</span></div>
             <div className="cs-spec-item cs-spec-cta">
@@ -253,7 +253,7 @@ const CaseStudyBitwise = () => {
       <div className="footer-zone">
         <div className="wrap">
           <footer className="footer">
-            <span>© MMXXVI ESKAY® — DESIGNED BY A HUMAN, ACCELERATED BY AI</span>
+            <span>© MMXXVI ATLAS® — DESIGNED BY HUMANS, ACCELERATED BY AI</span>
             <span>BITWISE / CRY-2025</span>
           </footer>
         </div>

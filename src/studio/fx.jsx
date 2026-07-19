@@ -3,7 +3,7 @@ import { motion, useMotionValue, useSpring, useInView } from 'framer-motion';
 import MESH from './facemesh.json';
 
 /* =========================================================
-   ESKAY STUDIO — interaction primitives
+   ATLAS STUDIO — interaction primitives
    ========================================================= */
 
 /* ---- Claude-style cursor: orange pointer arrow + orbiting sparkle ---- */

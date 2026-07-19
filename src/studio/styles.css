@@ -1,5 +1,5 @@
 /* ============================================================
-   ESKAY® BRAND SYSTEM — light industrial identity
+   ATLAS® BRAND SYSTEM — light industrial identity
    Dot-matrix display · spec-sheet labels · safety-orange signal
    ============================================================ */
 
@@ -270,7 +270,7 @@
 }
 .studio .work-preview img { width: 100%; height: 100%; object-fit: cover; }
 .studio .work-preview::after {
-  content: 'ESKAY® / PROJECT FILE'; position: absolute; left: 0; right: 0; bottom: 0;
+  content: 'ATLAS® / PROJECT FILE'; position: absolute; left: 0; right: 0; bottom: 0;
   background: var(--ink); color: var(--bone); font-family: var(--font-mono);
   font-size: 0.55rem; letter-spacing: 0.2em; padding: 5px 10px;
 }

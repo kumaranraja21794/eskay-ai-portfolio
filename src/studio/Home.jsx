@@ -5,7 +5,7 @@ import { Cursor, Scramble, Rise, Magnet, CountUp, NeuralHead, Tilt } from './fx'
 import './styles.css';
 
 /* =========================================================
-   ESKAY® — brand-identity portfolio
+   ATLAS® — brand-identity agency site
    Light industrial · dot-matrix type · safety-orange signal
    ========================================================= */
 
@@ -25,9 +25,9 @@ const Preloader = ({ onDone }) => {
   }, [onDone]);
   return (
     <motion.div className="loader" exit={{ y: '-100%', transition: { duration: 0.75, ease: EASE } }}>
-      <div className="loader-logo">ESKAY<em>.</em></div>
+      <div className="loader-logo">ATLAS<em>.</em></div>
       <div className="loader-bar"><motion.i animate={{ scaleX: n / 100 }} style={{ scaleX: 0 }} /></div>
-      <div className="loader-count">BOOTING BRAND OS — {String(n).padStart(3, '0')}%</div>
+      <div className="loader-count">BOOTING AGENCY OS — {String(n).padStart(3, '0')}%</div>
     </motion.div>
   );
 };
@@ -36,9 +36,9 @@ const Preloader = ({ onDone }) => {
 const MetaStrip = () => (
   <div className="meta-strip">
     <div className="wrap">
-      <span>ESKAY® INDUSTRIAL DESIGN UNIT</span>
+      <span>ATLAS® DESIGN & ENGINEERING AGENCY</span>
       <span className="m-hide">13.0827° N / 80.2707° E — CHENNAI</span>
-      <span className="m-hide">EST. 2016 / AI-NATIVE SINCE 2026</span>
+      <span className="m-hide">EST. 2026 / AI-NATIVE FROM DAY ONE</span>
       <span><span className="sig-dot" style={{ width: 6, height: 6, marginRight: 8 }} />ACCEPTING PROJECTS</span>
     </div>
   </div>
@@ -49,11 +49,11 @@ const Nav = () => (
     initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
     transition={{ duration: 0.8, delay: 0.15, ease: EASE }}>
     <div className="wrap nav-inner">
-      <a href="#top" className="nav-logo">ESKAY<sup>®</sup></a>
+      <a href="#top" className="nav-logo">ATLAS<sup>®</sup></a>
       <nav className="nav-links">
         <a className="nav-link" href="#work"><i>01</i>Work</a>
         <a className="nav-link" href="#services"><i>02</i>Spec</a>
-        <a className="nav-link" href="#about"><i>03</i>Unit</a>
+        <a className="nav-link" href="#about"><i>03</i>Agency</a>
         <a className="nav-link" href="#contact"><i>04</i>Signal</a>
       </nav>
       <Magnet><a className="nav-cta" href="#contact">Start transmission</a></Magnet>
@@ -69,7 +69,7 @@ const Hero = () => (
       <motion.div className="hero-product"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.7, ease: EASE }}>
-        <span className="sig-dot" /> ESKAY (01) — PORTFOLIO EDITION · MMXXVI
+        <span className="sig-dot" /> ATLAS (01) — AGENCY EDITION · MMXXVI
       </motion.div>
       <h1 className="hero-h1">
         <Rise delay={0.4}>Design</Rise><br />
@@ -80,8 +80,8 @@ const Hero = () => (
         <motion.p className="hero-sub"
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.0, duration: 0.8, ease: EASE }}>
-          <b>EsKay</b> is the industrial design unit of <b>Sakthi Kumaran</b> —
-          9+ years of enterprise UI/UX, rebuilt around an AI-native pipeline.
+          <b>Atlas</b> is a design & engineering agency —
+          9+ years of enterprise UI/UX craft, rebuilt around an AI-native pipeline.
           Research to pixel to production code. No bloat. No lorem ipsum. Just signal.
         </motion.p>
         <motion.div className="hero-actions"
@@ -117,9 +117,7 @@ const PROJECTS = [
   { name: 'Alpha Arena', code: 'FIN-2025', meta: ['Fintech', 'Dashboard', 'UX Research'], img: '/alpha_detail.png', to: '/case-study/alpha-arena' },
   { name: 'BitWise', code: 'CRY-2025', meta: ['Crypto', 'Mobile UX'], img: '/bitwise_thumb.png', to: '/case-study/bitwise' },
   { name: 'Silk Emporium', code: 'COM-2026', meta: ['E-commerce', 'Brand', 'UI'], img: '/silk_emporium.png' },
-  { name: 'Oman United Insurance', code: 'INS-2024', meta: ['Insurance', 'Web + Mobile', 'Angular'], img: '/oman_insurance_thumb.png' },
   { name: 'BookAPandit UK', code: 'MKT-2026', meta: ['Marketplace', 'Next.js'], img: '/bookapandit_thumb.png' },
-  { name: 'Shinhan Life Vietnam', code: 'INS-2023', meta: ['Insurance', 'Bilingual CMS'], img: '/shinhan_life_thumb.png' },
   { name: 'Infy Tech School', code: 'EDU-2026', meta: ['EdTech', 'Lead Capture'], img: '/infy_tech_thumb.png' },
 ];
 
@@ -161,8 +159,8 @@ const Work = () => {
             <h2 className="sec-title"><Rise>Proof, not promises</Rise></h2>
           </div>
           <p className="sec-note">
-            Fintech, insurance, e-commerce, edtech — shipped across India,
-            the Gulf, the UK and Vietnam. Hover a file to preview. Click to open.
+            Fintech, crypto, e-commerce, edtech — shipped across India
+            and the UK. Hover a file to preview. Click to open.
           </p>
         </div>
         <div className="work-list">
@@ -214,10 +212,10 @@ const Services = () => (
       <div className="sec-head">
         <div>
           <span className="sec-kicker"><span className="sig-dot" style={{ width: 6, height: 6 }} /><Scramble text="02 / TECHNICAL SPEC" /></span>
-          <h2 className="sec-title"><Rise>Unit capabilities</Rise></h2>
+          <h2 className="sec-title"><Rise>Agency capabilities</Rise></h2>
         </div>
         <p className="sec-note">
-          One senior brain, an AI copilot stack, zero agency bloat.
+          Senior-led teams, an AI copilot stack, zero bureaucratic bloat.
           Every engagement runs research → design → code as a single pipeline.
         </p>
       </div>
@@ -239,7 +237,7 @@ const Services = () => (
 
 /* ---------------- Terminal ---------------- */
 const TERM_LINES = [
-  { c: 'p', t: '$ eskay run brief.md --mode=ship' },
+  { c: 'p', t: '$ atlas run brief.md --mode=ship' },
   { c: '', t: '▸ parsing brief · extracting user goals … done' },
   { c: '', t: '▸ generating 12 layout directions … done' },
   { c: '', t: '▸ senior review: 9 killed, 3 refined ✂' },
@@ -260,7 +258,7 @@ const Terminal = () => {
     <section className="section" style={{ paddingTop: 0 }}>
       <div className="wrap" ref={ref}>
         <div className="term" data-hover>
-          <div className="term-bar"><i /><i /><i /><span>ESKAY® PIPELINE / LIVE LOG</span></div>
+          <div className="term-bar"><i /><i /><i /><span>ATLAS® PIPELINE / LIVE LOG</span></div>
           <div className="term-body">
             {lines.map((l, i) => (
               <motion.div key={i} className={l.c}
@@ -281,7 +279,7 @@ const Terminal = () => {
 const About = () => (
   <section className="section" id="about" style={{ background: 'var(--bone-2)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
     <div className="wrap">
-      <span className="sec-kicker"><span className="sig-dot" style={{ width: 6, height: 6 }} /><Scramble text="03 / THE UNIT" /></span>
+      <span className="sec-kicker"><span className="sig-dot" style={{ width: 6, height: 6 }} /><Scramble text="03 / THE AGENCY" /></span>
       <div className="about-grid">
         <div>
           <p className="about-big">
@@ -291,7 +289,7 @@ const About = () => (
             <em><Rise>senior design craft at machine tempo.</Rise></em>
           </p>
           <div className="stats">
-            <div className="stat"><CountUp end={9} suffix="+" /><span>Years in product</span></div>
+            <div className="stat"><CountUp end={9} suffix="+" /><span>Years combined craft</span></div>
             <div className="stat"><CountUp end={30} suffix="+" /><span>Projects shipped</span></div>
             <div className="stat"><CountUp end={7} suffix="" /><span>Industries served</span></div>
             <div className="stat"><CountUp end={4} suffix="" /><span>Countries deployed</span></div>
@@ -300,9 +298,9 @@ const About = () => (
           </div>
         </div>
         <Tilt className="portrait-card" max={5}>
-          <img src="/hero-bg-v13.png" alt="Sakthi Kumaran — EsKay" loading="lazy" />
+          <img src="/hero-bg-v13.png" alt="Atlas — founding design lead" loading="lazy" />
           <div className="portrait-label">
-            <span>SAKTHI KUMARAN — FOUNDER / DESIGN ENGINEER</span>
+            <span>ATLAS — FOUNDED BY SAKTHI KUMARAN</span>
             <span className="sig-dot" />
           </div>
         </Tilt>
@@ -311,12 +309,12 @@ const About = () => (
   </section>
 );
 
-/* ---------------- Journey ---------------- */
-const JOURNEY = [
-  { period: '2026 — NOW', role: 'Founder — EsKay Design Unit', co: 'AI-powered freelance design & development', loc: 'Remote / Global' },
-  { period: '2021 — 2026', role: 'UI/UX Designer & Frontend Dev', co: 'Azentio Software Pvt. Ltd.', loc: 'Chennai' },
-  { period: '2019 — 2021', role: 'UI Designer', co: '3i Infotech Ltd.', loc: 'Chennai' },
-  { period: '2016 — 2017', role: 'Trainee Engineer — Development', co: 'IVTL Infoview Technologies', loc: 'Chennai' },
+/* ---------------- Studio timeline ---------------- */
+const TIMELINE = [
+  { period: '2026 — NOW', role: 'Now accepting new engagements', co: 'Two client slots open for Q3 2026', loc: 'Remote / Global' },
+  { period: '2026', role: 'Cross-vertical delivery', co: 'Shipped Silk Emporium, BookAPandit UK & Infy Tech School', loc: 'India / UK' },
+  { period: '2026', role: 'Atlas founded', co: 'Studio formalized around a senior-led, AI-native pipeline', loc: 'Chennai / Remote' },
+  { period: '2025', role: 'Pre-launch client work', co: 'Delivered Alpha Arena (fintech) & BitWise (crypto)', loc: 'Remote / Global' },
 ];
 
 const Journey = () => (
@@ -324,12 +322,12 @@ const Journey = () => (
     <div className="wrap">
       <div className="sec-head">
         <div>
-          <span className="sec-kicker"><span className="sig-dot" style={{ width: 6, height: 6 }} /><Scramble text="04 / SERVICE HISTORY" /></span>
-          <h2 className="sec-title"><Rise>A decade of pixels</Rise></h2>
+          <span className="sec-kicker"><span className="sig-dot" style={{ width: 6, height: 6 }} /><Scramble text="04 / STUDIO TIMELINE" /></span>
+          <h2 className="sec-title"><Rise>How Atlas came together</Rise></h2>
         </div>
       </div>
       <div className="journey">
-        {JOURNEY.map((j, i) => (
+        {TIMELINE.map((j, i) => (
           <motion.div className="journey-row" key={j.role}
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.07, ease: EASE }}>
@@ -359,10 +357,10 @@ const Contact = () => (
       </h2>
       <p className="contact-sub">
         Currently taking on <b>2 new clients for Q3 2026</b>.
-        Tell me what you're building — response within 24 hours.
+        Tell us what you're building — response within 24 hours.
       </p>
       <div className="contact-actions">
-        <Magnet><a className="btn-primary" href="mailto:kumaranraja210794@gmail.com">kumaranraja210794@gmail.com</a></Magnet>
+        <Magnet><a className="btn-primary" href="mailto:kumaranraja210794@gmail.com">Email Atlas ↗</a></Magnet>
         <Magnet><a className="btn-ghost" href="https://www.linkedin.com/in/sakthi-kumaran-62645372/" target="_blank" rel="noreferrer">LinkedIn ↗</a></Magnet>
       </div>
       <div className="socials">
@@ -380,7 +378,7 @@ const Footer = () => (
   <div className="footer-zone">
     <div className="wrap">
       <footer className="footer">
-        <span>© MMXXVI ESKAY® — DESIGNED BY A HUMAN, ACCELERATED BY AI</span>
+        <span>© MMXXVI ATLAS® — DESIGNED BY HUMANS, ACCELERATED BY AI</span>
         <div className="barcode" aria-hidden="true">
           {BARS.map((h, i) => <i key={i} style={{ height: h }} />)}
         </div>
