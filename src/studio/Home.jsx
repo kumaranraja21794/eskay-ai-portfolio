@@ -38,7 +38,7 @@ const MetaStrip = () => (
     <div className="wrap">
       <span>ATLAS® DESIGN & ENGINEERING AGENCY</span>
       <span className="m-hide">13.0827° N / 80.2707° E — CHENNAI</span>
-      <span className="m-hide">EST. 2026 / AI-NATIVE FROM DAY ONE</span>
+      <span className="m-hide">EST. JUL 2026 / AI-NATIVE FROM DAY ONE</span>
       <span><span className="sig-dot" style={{ width: 6, height: 6, marginRight: 8 }} />ACCEPTING PROJECTS</span>
     </div>
   </div>
@@ -81,7 +81,7 @@ const Hero = () => (
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.0, duration: 0.8, ease: EASE }}>
           <b>Atlas</b> is a design & engineering agency —
-          9+ years of enterprise UI/UX craft, rebuilt around an AI-native pipeline.
+          founded in July 2026, built AI-native from day one.
           Research to pixel to production code. No bloat. No lorem ipsum. Just signal.
         </motion.p>
         <motion.div className="hero-actions"
@@ -289,10 +289,10 @@ const About = () => (
             <em><Rise>senior design craft at machine tempo.</Rise></em>
           </p>
           <div className="stats">
-            <div className="stat"><CountUp end={9} suffix="+" /><span>Years combined craft</span></div>
-            <div className="stat"><CountUp end={30} suffix="+" /><span>Projects shipped</span></div>
-            <div className="stat"><CountUp end={7} suffix="" /><span>Industries served</span></div>
-            <div className="stat"><CountUp end={4} suffix="" /><span>Countries deployed</span></div>
+            <div className="stat"><b>JUL<i>2026</i></b><span>Founded</span></div>
+            <div className="stat"><CountUp end={5} suffix="" /><span>Projects shipped</span></div>
+            <div className="stat"><CountUp end={5} suffix="" /><span>Industries served</span></div>
+            <div className="stat"><CountUp end={2} suffix="" /><span>Countries deployed</span></div>
             <div className="stat"><CountUp end={10} suffix="×" /><span>Faster with AI</span></div>
             <div className="stat"><b>∞<i /></b><span>Iterations included</span></div>
           </div>
@@ -311,10 +311,9 @@ const About = () => (
 
 /* ---------------- Studio timeline ---------------- */
 const TIMELINE = [
-  { period: '2026 — NOW', role: 'Now accepting new engagements', co: 'Two client slots open for Q3 2026', loc: 'Remote / Global' },
-  { period: '2026', role: 'Cross-vertical delivery', co: 'Shipped Silk Emporium, BookAPandit UK & Infy Tech School', loc: 'India / UK' },
-  { period: '2026', role: 'Atlas founded', co: 'Studio formalized around a senior-led, AI-native pipeline', loc: 'Chennai / Remote' },
-  { period: '2025', role: 'Pre-launch client work', co: 'Delivered Alpha Arena (fintech) & BitWise (crypto)', loc: 'Remote / Global' },
+  { period: 'JUL 2026 — NOW', role: 'Now accepting new engagements', co: 'Two client slots open for Q3 2026', loc: 'Remote / Global' },
+  { period: 'JUL 2026', role: 'Atlas founded', co: 'Studio formalized around a senior-led, AI-native pipeline', loc: 'Chennai / Remote' },
+  { period: '2025 — 2026', role: 'Portfolio work, pre-founding', co: 'Alpha Arena, BitWise, Silk Emporium, BookAPandit UK & Infy Tech School', loc: 'India / UK / Remote' },
 ];
 
 const Journey = () => (
